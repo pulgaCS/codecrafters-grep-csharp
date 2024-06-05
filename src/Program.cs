@@ -2,46 +2,64 @@ using System;
 using System.IO;
 
 static bool MatchPattern(string inputLine, string pattern) {
-    if (pattern.Length == 1) {
-        return inputLine.Contains(pattern);
-    }
-    else if (pattern == @"\d") {
-        foreach (char d in inputLine) {
-            if (char.IsDigit(d)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    else if (pattern == @"\w") {
-        foreach (char w in inputLine) {
-            if (char.IsLetterOrDigit(w)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    else if (pattern.Length > 2 && pattern[0] == '[' && pattern[pattern.Length - 1] == ']') {
-        if (pattern[1] == '^') {
-            foreach (char c in inputLine) {
-                if (!pattern.Substring(2, pattern.Length - 3).Contains(c)) {
-                    return true;
+    int inputIndex = 0;
+    int patternIndex = 0;
+
+    while (inputIndex < inputLine.Length && patternIndex < pattern.Length) {
+        char currentChar = inputLine[inputIndex];
+        char currentPatternChar = pattern[patternIndex];
+
+        if (currentPatternChar == '\\') {
+            // Handle escaped characters like \d, \w, etc.
+            patternIndex++;
+            if (patternIndex < pattern.Length) {
+                char escapedChar = pattern[patternIndex];
+                if (escapedChar == 'd') {
+                    if (!char.IsDigit(currentChar))
+                        return false;
+                }
+                else if (escapedChar == 'w') {
+                    if (!char.IsLetterOrDigit(currentChar))
+                        return false;
+                }
+                else if (currentChar != escapedChar) {
+                    return false;
                 }
             }
-            return false;
+        }
+        else if (currentPatternChar == ' ') {
+            // Skip whitespace in the pattern
+            patternIndex++;
+            continue;
+        }
+        else if (currentPatternChar == inputLine[inputIndex]) {
+            // Match character directly
+            inputIndex++;
+        }
+        else if (currentPatternChar == '.' && patternIndex + 1 < pattern.Length && pattern[patternIndex + 1] == '*') {
+            // Handle .* pattern
+            patternIndex += 2;
+            if (patternIndex == pattern.Length) return true; // .* matches anything
+            char nextChar = pattern[patternIndex];
+            while (inputIndex < inputLine.Length && inputLine[inputIndex] != nextChar)
+                inputIndex++;
+        }
+        else if (patternIndex + 1 < pattern.Length && pattern[patternIndex + 1] == '*') {
+            // Handle character class followed by *
+            char classChar = pattern[patternIndex];
+            patternIndex += 2;
+            while (inputIndex < inputLine.Length && inputLine[inputIndex] == classChar)
+                inputIndex++;
         }
         else {
-            foreach (char c in inputLine) {
-                if (pattern.Substring(1, pattern.Length - 2).Contains(c)) {
-                    return true;
-                }
-            }
             return false;
         }
+
+        patternIndex++;
     }
-    else {
-        throw new ArgumentException($"Unhandled pattern: {pattern}");
-    }
+
+    // If the pattern is finished, but there's still input left, return false
+    return patternIndex == pattern.Length && inputIndex == inputLine.Length;
 }
 
 if (args.Length < 2 || args[0] != "-E") {
