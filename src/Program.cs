@@ -13,6 +13,14 @@ static bool MatchPattern(string inputLine, string pattern) {
         }
         return false;
     }
+    else if (pattern == @"\w") {
+        foreach (char w in inputLine) {
+            if (char.IsDigit(w)) {
+                return true;
+            }
+        }
+        return false;
+    }
     else {
         throw new ArgumentException($"Unhandled pattern: {pattern}");
     }
