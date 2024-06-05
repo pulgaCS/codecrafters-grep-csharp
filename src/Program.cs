@@ -6,60 +6,72 @@ static bool MatchPattern(string inputLine, string pattern) {
     int patternIndex = 0;
 
     while (inputIndex < inputLine.Length && patternIndex < pattern.Length) {
-        char currentChar = inputLine[inputIndex];
-        char currentPatternChar = pattern[patternIndex];
-
-        if (currentPatternChar == '\\') {
-            // Handle escaped characters like \d, \w, etc.
+        if (pattern[patternIndex] == '\\') {
             patternIndex++;
-            if (patternIndex < pattern.Length) {
-                char escapedChar = pattern[patternIndex];
-                if (escapedChar == 'd') {
-                    if (!char.IsDigit(currentChar))
-                        return false;
-                }
-                else if (escapedChar == 'w') {
-                    if (!char.IsLetterOrDigit(currentChar))
-                        return false;
-                }
-                else if (currentChar != escapedChar) {
+            if (patternIndex >= pattern.Length) {
+                throw new ArgumentException($"Invalid pattern: {pattern}");
+            }
+            if (pattern[patternIndex] == 'd') {
+                if (!char.IsDigit(inputLine[inputIndex])) {
                     return false;
                 }
             }
+            else if (pattern[patternIndex] == 'w') {
+                if (!char.IsLetterOrDigit(inputLine[inputIndex])) {
+                    return false;
+                }
+            }
+            else if (pattern[patternIndex] == 's') {
+                if (!char.IsWhiteSpace(inputLine[inputIndex])) {
+                    return false;
+                }
+            }
+            else {
+                throw new ArgumentException($"Invalid escape sequence: \\{pattern[patternIndex]}");
+            }
         }
-        else if (currentPatternChar == ' ') {
-            // Skip whitespace in the pattern
+        else if (pattern[patternIndex] == '[') {
+            bool invert = false;
+            if (pattern[patternIndex + 1] == '^') {
+                invert = true;
+                patternIndex++;
+            }
             patternIndex++;
-            continue;
-        }
-        else if (currentPatternChar == inputLine[inputIndex]) {
-            // Match character directly
-            inputIndex++;
-        }
-        else if (currentPatternChar == '.' && patternIndex + 1 < pattern.Length && pattern[patternIndex + 1] == '*') {
-            // Handle .* pattern
-            patternIndex += 2;
-            if (patternIndex == pattern.Length) return true; // .* matches anything
-            char nextChar = pattern[patternIndex];
-            while (inputIndex < inputLine.Length && inputLine[inputIndex] != nextChar)
-                inputIndex++;
-        }
-        else if (patternIndex + 1 < pattern.Length && pattern[patternIndex + 1] == '*') {
-            // Handle character class followed by *
-            char classChar = pattern[patternIndex];
-            patternIndex += 2;
-            while (inputIndex < inputLine.Length && inputLine[inputIndex] == classChar)
-                inputIndex++;
+            bool match = false;
+            while (pattern[patternIndex] != ']') {
+                if (pattern[patternIndex] == '\\') {
+                    patternIndex++;
+                    if (patternIndex >= pattern.Length) {
+                        throw new ArgumentException($"Invalid pattern: {pattern}");
+                    }
+                    if (pattern[patternIndex] == inputLine[inputIndex]) {
+                        match = true;
+                        break;
+                    }
+                }
+                else if (pattern[patternIndex] == inputLine[inputIndex]) {
+                    match = true;
+                    break;
+                }
+                patternIndex++;
+            }
+            if (invert) {
+                match = !match;
+            }
+            if (!match) {
+                return false;
+            }
         }
         else {
-            return false;
+            if (pattern[patternIndex] != inputLine[inputIndex]) {
+                return false;
+            }
         }
-
+        inputIndex++;
         patternIndex++;
     }
 
-    // If the pattern is finished, but there's still input left, return false
-    return patternIndex == pattern.Length && inputIndex == inputLine.Length;
+    return inputIndex == inputLine.Length && patternIndex == pattern.Length;
 }
 
 if (args.Length < 2 || args[0] != "-E") {
@@ -68,10 +80,10 @@ if (args.Length < 2 || args[0] != "-E") {
 }
 
 string pattern = args[1];
-string inputLine = Console.In.ReadToEnd();
-
-// You can use print statements as follows for debugging, they'll be visible when running tests.
-Console.WriteLine("Logs from your program will appear here!");
+string inputLine;
+using (StreamReader reader = new StreamReader(Console.OpenStandardInput())) {
+    inputLine = reader.ReadLine();
+}
 
 if (MatchPattern(inputLine, pattern)) {
     Environment.Exit(0);
