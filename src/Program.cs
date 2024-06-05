@@ -22,20 +22,22 @@ static bool MatchPattern(string inputLine, string pattern) {
         return false;
     }
     else if (pattern.Length > 2 && pattern[0] == '[' && pattern[pattern.Length - 1] == ']') {
-        foreach (char c in inputLine) {
-            if (pattern.Substring(1, pattern.Length - 2).Contains(c)) {
-                return true;
+        if (pattern[1] == '^') {
+            foreach (char c in inputLine) {
+                if (!pattern.Substring(2, pattern.Length - 3).Contains(c)) {
+                    return true;
+                }
             }
+            return false;
         }
-        return false;
-    }
-    else if (pattern.Length > 3 && pattern[0] == '[' && pattern[1] == '^' && pattern[pattern.Length - 1] == ']') {
-        foreach (char c in inputLine) {
-            if (!pattern.Substring(2, pattern.Length - 3).Contains(c)) {
-                return true;
+        else {
+            foreach (char c in inputLine) {
+                if (pattern.Substring(1, pattern.Length - 2).Contains(c)) {
+                    return true;
+                }
             }
+            return false;
         }
-        return false;
     }
     else {
         throw new ArgumentException($"Unhandled pattern: {pattern}");
