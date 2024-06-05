@@ -15,7 +15,7 @@ static bool MatchPattern(string inputLine, string pattern) {
     }
     else if (pattern == @"\w") {
         foreach (char w in inputLine) {
-            if (char.IsDigit(w)) {
+            if (char.IsLetterOrDigit(w)) {
                 return true;
             }
         }
