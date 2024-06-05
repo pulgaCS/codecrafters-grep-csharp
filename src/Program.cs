@@ -2,54 +2,55 @@ using System;
 using System.IO;
 
 static bool MatchPattern(string inputLine, string pattern) {
-    int i = 0, j = 0;
-    while (i < inputLine.Length && j < pattern.Length) {
-        if (pattern[j] == '\\') {
-            j++;
-            if (pattern[j] == 'd' && !char.IsDigit(inputLine[i])) {
-                return false;
-            }
-            if (pattern[j] == 'w' && !char.IsLetterOrDigit(inputLine[i])) {
-                return false;
-            }
-        }
-        else if (pattern[j] == '[') {
-            bool match = false;
-            j++;
-            bool negate = pattern[j] == '^';
-            if (negate) {
-                j++;
-            }
-            while (pattern[j] != ']') {
-                if (negate) {
-                    if (!inputLine[i].Equals(pattern[j])) {
-                        match = true;
-                        break;
-                    }
+    int inputIndex = 0, patternIndex = 0;
+    while (inputIndex < inputLine.Length && patternIndex < pattern.Length) {
+        switch (pattern[patternIndex]) {
+            case '\\':
+                patternIndex++;
+                if (pattern[patternIndex] == 'd' && char.IsDigit(inputLine[inputIndex])) {
+                    patternIndex++;
+                    inputIndex++;
+                }
+                else if (pattern[patternIndex] == 'w' && char.IsLetterOrDigit(inputLine[inputIndex])) {
+                    patternIndex++;
+                    inputIndex++;
                 }
                 else {
-                    if (inputLine[i].Equals(pattern[j])) {
+                    return false;
+                }
+                break;
+            case '[':
+                bool match = false;
+                patternIndex++;
+                bool negate = pattern[patternIndex] == '^';
+                if (negate) patternIndex++;
+                while (pattern[patternIndex] != ']') {
+                    if ((negate && inputLine[inputIndex] != pattern[patternIndex]) ||
+                        (!negate && inputLine[inputIndex] == pattern[patternIndex])) {
                         match = true;
                         break;
                     }
+                    patternIndex++;
                 }
-                j++;
-            }
-            if (!match) {
-                return false;
-            }
-            while (pattern[j] != ']') {
-                j++;
-            }
+                if (!match) return false;
+                while (pattern[patternIndex] != ']') patternIndex++;
+                patternIndex++;
+                inputIndex++;
+                break;
+            default:
+                if (inputLine[inputIndex] == pattern[patternIndex]) {
+                    inputIndex++;
+                    patternIndex++;
+                }
+                else {
+                    return false;
+                }
+                break;
         }
-        else if (!inputLine[i].Equals(pattern[j])) {
-            return false;
-        }
-        i++;
-        j++;
     }
-    return i == inputLine.Length && j == pattern.Length;
+    return inputIndex == inputLine.Length && patternIndex == pattern.Length;
 }
+
 
 if (args.Length < 2 || args[0] != "-E") {
     Console.WriteLine("Expected first argument to be '-E'");
