@@ -21,11 +21,9 @@ static bool MatchPattern(string inputLine, string pattern) {
         }
         return false;
     }
-    else if (pattern == @"[abc]") {
-        foreach (char c in inputLine) {
-            if (c == 'a' || c == 'b' || c == 'c') {
-                return true;
-            }
+    else if (pattern == "[abc]") {
+        if (inputLine.IndexOf('a') != -1 || inputLine.IndexOf('b') != -1 || inputLine.IndexOf('c') != -1) {
+            return true;
         }
         return false;
     }
