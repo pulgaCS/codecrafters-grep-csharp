@@ -21,12 +21,12 @@ static bool MatchPattern(string inputLine, string pattern) {
         }
         return false;
     }
-    else if (pattern == "[abc]") {
-        if (inputLine.IndexOf('a') != -1 || inputLine.IndexOf('b') != -1 || inputLine.IndexOf('c') != -1) {
-            return true;
+    else if (pattern.Length > 2 && pattern[0] == '[' && pattern[pattern.Length - 1] == ']') {
+        foreach (char c in inputLine) {
+            if (pattern.Substring(1, pattern.Length - 2).Contains(c)) {
+                return true;
+            }
         }
-        return false;
-    }
     else {
         throw new ArgumentException($"Unhandled pattern: {pattern}");
     }
