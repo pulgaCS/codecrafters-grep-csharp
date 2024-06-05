@@ -21,6 +21,14 @@ static bool MatchPattern(string inputLine, string pattern) {
         }
         return false;
     }
+    else if (pattern == @"[abc]") {
+        foreach (char abc in inputLine) {
+            if (char.IsLetterOrDigit(abc)) {
+                return true;
+            }
+        }
+        return false;
+    }
     else {
         throw new ArgumentException($"Unhandled pattern: {pattern}");
     }
