@@ -1,79 +1,33 @@
 using System;
 using System.IO;
 
-static void Main(string[] args) {
-    // Check if there are enough arguments
-    if (args.Length < 1) {
-        Console.WriteLine("Usage: YourGrep <pattern>");
-        Environment.Exit(2);
+static bool MatchPattern(string inputLine, string pattern)
+{
+    if (pattern.Length == 1)
+    {
+        return inputLine.Contains(pattern);
     }
-
-    // Extract the pattern from the arguments
-    string pattern = args[0];
-
-    // Read lines from standard input
-    string inputLine;
-    while ((inputLine = Console.ReadLine()) != null) {
-        // Check if the line matches the pattern
-        if (MatchesPattern(inputLine, pattern)) {
-            // Print the matching line
-            Console.WriteLine(inputLine);
-        }
+    else
+    {
+        throw new ArgumentException($"Unhandled pattern: {pattern}");
     }
 }
 
-static bool MatchesPattern(string inputLine, string pattern) {
-    // Handle specific patterns
-    if (pattern == @"\d") {
-        // Check if the line contains any digit
-        foreach (char c in inputLine) {
-            if (char.IsDigit(c)) {
-                return true;
-            }
-        }
-    }
-    else if (pattern == @"\w") {
-        // Check if the line contains any word character
-        foreach (char c in inputLine) {
-            if (char.IsLetterOrDigit(c)) {
-                return true;
-            }
-        }
-    }
-    else if (pattern == ".") {
-        // Check if the line contains any character (non-empty line)
-        return inputLine.Length > 0;
-    }
-    else if (pattern.StartsWith("^") && pattern.Length > 1) {
-        // Check if the line starts with the specified pattern
-        return inputLine.StartsWith(pattern.Substring(1));
-    }
-    else if (pattern.EndsWith("$") && pattern.Length > 1) {
-        // Check if the line ends with the specified pattern
-        return inputLine.EndsWith(pattern.Substring(0, pattern.Length - 1));
-    }
-    else if (pattern.StartsWith("[") && pattern.EndsWith("]")) {
-        // Handle character class patterns like [abcd]
-        string charClass = pattern.Substring(1, pattern.Length - 2);
-        foreach (char c in inputLine) {
-            if (charClass.Contains(c)) {
-                return true;
-            }
-        }
-    }
-    else if (pattern.StartsWith("[^") && pattern.EndsWith("]")) {
-        // Handle negated character class patterns like [^xyz]
-        string negatedCharClass = pattern.Substring(2, pattern.Length - 3);
-        foreach (char c in inputLine) {
-            if (!negatedCharClass.Contains(c)) {
-                return true;
-            }
-        }
-    }
-    else {
-        // Default to simple substring matching
-        return inputLine.Contains(pattern);
-    }
+if (args[0] != "-E")
+{
+    Console.WriteLine("Expected first argument to be '-E'");
+    Environment.Exit(2);
+}
 
-    return false; // No match found
+string pattern = args[1];
+string inputLine = Console.In.ReadToEnd();
+
+// You can use print statements as follows for debugging, they'll be visible when running tests.
+Console.WriteLine("Logs from your program will appear here!");
+
+if (MatchPattern(inputLine, pattern)) {
+    Environment.Exit(0);
+}
+else {
+    Environment.Exit(1);
 }
