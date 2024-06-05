@@ -2,51 +2,39 @@ using System;
 using System.IO;
 
 static bool MatchPattern(string inputLine, string pattern) {
-    int inputIndex = 0, patternIndex = 0;
-    while (inputIndex < inputLine.Length && patternIndex < pattern.Length) {
-        if (pattern[patternIndex] == '\\') {
-            // Handle escape sequences
-            patternIndex++;
-            if (patternIndex >= pattern.Length) return false; // Pattern ends with a backslash
-            switch (pattern[patternIndex]) {
-                case 'd':
-                    if (!char.IsDigit(inputLine[inputIndex])) return false;
-                    break;
-                case 'w':
-                    if (!char.IsLetterOrDigit(inputLine[inputIndex])) return false;
-                    break;
-                default:
-                    // Handle other escape sequences if needed
-                    return false;
-            }
-        }
-        else if (pattern[patternIndex] == '[') {
-            // Handle character classes
-            bool match = false;
-            bool negate = patternIndex + 1 < pattern.Length && pattern[patternIndex + 1] == '^';
-            int charClassStart = negate ? patternIndex + 2 : patternIndex + 1;
-            int charClassEnd = pattern.IndexOf(']', charClassStart);
-            if (charClassEnd == -1) return false; // No closing bracket found
-            string charClass = pattern.Substring(charClassStart, charClassEnd - charClassStart);
-            if (negate) {
-                match = !charClass.Contains(inputLine[inputIndex]);
-            }
-            else {
-                match = charClass.Contains(inputLine[inputIndex]);
-            }
-            patternIndex = charClassEnd + 1;
-        }
-        else {
-            // Handle literal characters
-            if (pattern[patternIndex] != inputLine[inputIndex]) return false;
-        }
-        inputIndex++;
-        patternIndex++;
-    }
-    // Check if entire pattern was matched
-    return inputIndex == inputLine.Length && patternIndex == pattern.Length;
+    return MatchPatternRecursive(inputLine, 0, pattern, 0);
 }
 
+static bool MatchPatternRecursive(string inputLine, int inputIndex, string pattern, int patternIndex) {
+    if (patternIndex == pattern.Length) {
+        return inputIndex == inputLine.Length;
+    }
+
+    if (pattern[patternIndex] == '\\') {
+        if (patternIndex + 1 < pattern.Length) {
+            char patternClass = pattern[patternIndex + 1];
+            if (inputIndex < inputLine.Length && MatchCharacterClass(inputLine[inputIndex], patternClass)) {
+                return MatchPatternRecursive(inputLine, inputIndex + 1, pattern, patternIndex + 2);
+            }
+            return false;
+        }
+        throw new ArgumentException($"Invalid escape sequence in pattern: {pattern}");
+    }
+
+    if (inputIndex < inputLine.Length && inputLine[inputIndex] == pattern[patternIndex]) {
+        return MatchPatternRecursive(inputLine, inputIndex + 1, pattern, patternIndex + 1);
+    }
+
+    return false;
+}
+
+static bool MatchCharacterClass(char c, char patternClass) {
+    return patternClass switch {
+        'd' => char.IsDigit(c),
+        'w' => char.IsLetterOrDigit(c),
+        _ => throw new ArgumentException($"Unknown character class: \\{patternClass}")
+    };
+}
 
 if (args.Length < 2 || args[0] != "-E") {
     Console.WriteLine("Expected first argument to be '-E'");
@@ -54,10 +42,7 @@ if (args.Length < 2 || args[0] != "-E") {
 }
 
 string pattern = args[1];
-string inputLine = Console.In.ReadToEnd();
-
-// You can use print statements as follows for debugging, they'll be visible when running tests.
-Console.WriteLine("Logs from your program will appear here!");
+string inputLine = Console.In.ReadToEnd().Trim(); // Trim to remove any extra newline from input
 
 if (MatchPattern(inputLine, pattern)) {
     Environment.Exit(0);
