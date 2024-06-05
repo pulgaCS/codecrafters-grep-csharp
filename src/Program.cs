@@ -79,6 +79,7 @@ public class Program {
             Environment.Exit(0);
         }
         else {
+            Console.WriteLine("No match found");
             Environment.Exit(1);
         }
     }
