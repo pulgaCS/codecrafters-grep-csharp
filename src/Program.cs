@@ -29,6 +29,14 @@ static bool MatchPattern(string inputLine, string pattern) {
         }
         return false;
     }
+    else if (pattern.Length > 2 && pattern[0] == '[' && pattern[1] == '^' && pattern[pattern.Length - 1] == ']') {
+        foreach (char c in inputLine) {
+            if (pattern.Substring(1, pattern.Length - 2).Contains(c)) {
+                return false;
+            }
+        }
+        return true;
+    }
     else {
         throw new ArgumentException($"Unhandled pattern: {pattern}");
     }
