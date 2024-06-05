@@ -4,50 +4,46 @@ using System.IO;
 static bool MatchPattern(string inputLine, string pattern) {
     int inputIndex = 0, patternIndex = 0;
     while (inputIndex < inputLine.Length && patternIndex < pattern.Length) {
-        switch (pattern[patternIndex]) {
-            case '\\':
-                patternIndex++;
-                if (pattern[patternIndex] == 'd' && char.IsDigit(inputLine[inputIndex])) {
-                    patternIndex++;
-                    inputIndex++;
-                }
-                else if (pattern[patternIndex] == 'w' && char.IsLetterOrDigit(inputLine[inputIndex])) {
-                    patternIndex++;
-                    inputIndex++;
-                }
-                else {
+        if (pattern[patternIndex] == '\\') {
+            // Handle escape sequences
+            patternIndex++;
+            if (patternIndex >= pattern.Length) return false; // Pattern ends with a backslash
+            switch (pattern[patternIndex]) {
+                case 'd':
+                    if (!char.IsDigit(inputLine[inputIndex])) return false;
+                    break;
+                case 'w':
+                    if (!char.IsLetterOrDigit(inputLine[inputIndex])) return false;
+                    break;
+                default:
+                    // Handle other escape sequences if needed
                     return false;
-                }
-                break;
-            case '[':
-                bool match = false;
-                patternIndex++;
-                bool negate = pattern[patternIndex] == '^';
-                if (negate) patternIndex++;
-                while (pattern[patternIndex] != ']') {
-                    if ((negate && inputLine[inputIndex] != pattern[patternIndex]) ||
-                        (!negate && inputLine[inputIndex] == pattern[patternIndex])) {
-                        match = true;
-                        break;
-                    }
-                    patternIndex++;
-                }
-                if (!match) return false;
-                while (pattern[patternIndex] != ']') patternIndex++;
-                patternIndex++;
-                inputIndex++;
-                break;
-            default:
-                if (inputLine[inputIndex] == pattern[patternIndex]) {
-                    inputIndex++;
-                    patternIndex++;
-                }
-                else {
-                    return false;
-                }
-                break;
+            }
         }
+        else if (pattern[patternIndex] == '[') {
+            // Handle character classes
+            bool match = false;
+            bool negate = patternIndex + 1 < pattern.Length && pattern[patternIndex + 1] == '^';
+            int charClassStart = negate ? patternIndex + 2 : patternIndex + 1;
+            int charClassEnd = pattern.IndexOf(']', charClassStart);
+            if (charClassEnd == -1) return false; // No closing bracket found
+            string charClass = pattern.Substring(charClassStart, charClassEnd - charClassStart);
+            if (negate) {
+                match = !charClass.Contains(inputLine[inputIndex]);
+            }
+            else {
+                match = charClass.Contains(inputLine[inputIndex]);
+            }
+            patternIndex = charClassEnd + 1;
+        }
+        else {
+            // Handle literal characters
+            if (pattern[patternIndex] != inputLine[inputIndex]) return false;
+        }
+        inputIndex++;
+        patternIndex++;
     }
+    // Check if entire pattern was matched
     return inputIndex == inputLine.Length && patternIndex == pattern.Length;
 }
 
