@@ -32,10 +32,10 @@ static bool MatchPattern(string inputLine, string pattern) {
     else if (pattern.Length > 3 && pattern[0] == '[' && pattern[1] == '^' && pattern[pattern.Length - 1] == ']') {
         foreach (char c in inputLine) {
             if (!pattern.Substring(2, pattern.Length - 3).Contains(c)) {
-                return true;
+                return false;
             }
         }
-        return false;
+        return true;
     }
     else {
         throw new ArgumentException($"Unhandled pattern: {pattern}");
