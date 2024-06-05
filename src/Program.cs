@@ -1,69 +1,74 @@
-using System;
-using System.IO;
-
 static bool MatchPattern(string inputLine, string pattern) {
     int inputIndex = 0;
     int patternIndex = 0;
 
     while (inputIndex < inputLine.Length && patternIndex < pattern.Length) {
         if (pattern[patternIndex] == '\\') {
+            // Handling escape characters
             patternIndex++;
             if (patternIndex >= pattern.Length) {
-                throw new ArgumentException($"Invalid pattern: {pattern}");
+                throw new ArgumentException("Invalid pattern: pattern ends with escape character");
             }
-            if (pattern[patternIndex] == 'd') {
-                if (!char.IsDigit(inputLine[inputIndex])) {
-                    return false;
-                }
-            }
-            else if (pattern[patternIndex] == 'w') {
-                if (!char.IsLetterOrDigit(inputLine[inputIndex])) {
-                    return false;
-                }
-            }
-            else if (pattern[patternIndex] == 's') {
-                if (!char.IsWhiteSpace(inputLine[inputIndex])) {
-                    return false;
-                }
-            }
-            else {
-                throw new ArgumentException($"Invalid escape sequence: \\{pattern[patternIndex]}");
+            if (inputLine[inputIndex] != pattern[patternIndex]) {
+                return false;
             }
         }
+        else if (pattern[patternIndex] == '.') {
+            // Match any character
+            inputIndex++;
+        }
         else if (pattern[patternIndex] == '[') {
-            bool invert = false;
-            if (pattern[patternIndex + 1] == '^') {
-                invert = true;
+            bool isInverted = false;
+            if (patternIndex + 1 < pattern.Length && pattern[patternIndex + 1] == '^') {
+                isInverted = true;
                 patternIndex++;
             }
-            patternIndex++;
-            bool match = false;
+            patternIndex++; // Move past '[' or '^'
+            bool matched = false;
             while (pattern[patternIndex] != ']') {
-                if (pattern[patternIndex] == '\\') {
-                    patternIndex++;
-                    if (patternIndex >= pattern.Length) {
-                        throw new ArgumentException($"Invalid pattern: {pattern}");
+                if (patternIndex >= pattern.Length) {
+                    throw new ArgumentException("Invalid pattern: missing ']'");
+                }
+                char currentPatternChar = pattern[patternIndex];
+                if (patternIndex + 1 < pattern.Length && pattern[patternIndex + 1] == '-') {
+                    if (patternIndex + 2 >= pattern.Length) {
+                        throw new ArgumentException("Invalid pattern: missing range end");
                     }
-                    if (pattern[patternIndex] == inputLine[inputIndex]) {
-                        match = true;
+                    char rangeEnd = pattern[patternIndex + 2];
+                    if (inputLine[inputIndex] >= currentPatternChar && inputLine[inputIndex] <= rangeEnd) {
+                        matched = true;
+                        break;
+                    }
+                    patternIndex += 2; // Move past '-'
+                }
+                else {
+                    if (inputLine[inputIndex] == currentPatternChar) {
+                        matched = true;
                         break;
                     }
                 }
-                else if (pattern[patternIndex] == inputLine[inputIndex]) {
-                    match = true;
-                    break;
-                }
                 patternIndex++;
             }
-            if (invert) {
-                match = !match;
+            if (isInverted) {
+                matched = !matched;
             }
-            if (!match) {
+            if (!matched) {
+                return false;
+            }
+        }
+        else if (pattern[patternIndex] == '\\') {
+            // Handling escaped characters
+            patternIndex++;
+            if (patternIndex >= pattern.Length) {
+                throw new ArgumentException("Invalid pattern: pattern ends with escape character");
+            }
+            if (inputLine[inputIndex] != pattern[patternIndex]) {
                 return false;
             }
         }
         else {
-            if (pattern[patternIndex] != inputLine[inputIndex]) {
+            // Normal character comparison
+            if (inputLine[inputIndex] != pattern[patternIndex]) {
                 return false;
             }
         }
@@ -72,22 +77,4 @@ static bool MatchPattern(string inputLine, string pattern) {
     }
 
     return inputIndex == inputLine.Length && patternIndex == pattern.Length;
-}
-
-if (args.Length < 2 || args[0] != "-E") {
-    Console.WriteLine("Expected first argument to be '-E'");
-    Environment.Exit(2);
-}
-
-string pattern = args[1];
-string inputLine;
-using (StreamReader reader = new StreamReader(Console.OpenStandardInput())) {
-    inputLine = reader.ReadLine();
-}
-
-if (MatchPattern(inputLine, pattern)) {
-    Environment.Exit(0);
-}
-else {
-    Environment.Exit(1);
 }
