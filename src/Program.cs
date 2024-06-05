@@ -22,8 +22,8 @@ static bool MatchPattern(string inputLine, string pattern) {
         return false;
     }
     else if (pattern == @"[abc]") {
-        foreach (char abc in inputLine) {
-            if (char.IsLetterOrDigit(abc)) {
+        foreach (char c in inputLine) {
+            if (c == 'a' || c == 'b' || c == 'c') {
                 return true;
             }
         }
