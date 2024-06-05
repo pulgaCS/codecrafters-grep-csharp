@@ -27,6 +27,8 @@ static bool MatchPattern(string inputLine, string pattern) {
                 return true;
             }
         }
+        return false;
+    }
     else {
         throw new ArgumentException($"Unhandled pattern: {pattern}");
     }
