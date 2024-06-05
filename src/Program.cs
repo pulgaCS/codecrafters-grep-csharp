@@ -1,20 +1,24 @@
 using System;
 using System.IO;
 
-static bool MatchPattern(string inputLine, string pattern)
-{
-    if (pattern.Length == 1)
-    {
+static bool MatchPattern(string inputLine, string pattern) {
+    if (pattern.Length == 1) {
         return inputLine.Contains(pattern);
     }
-    else
-    {
+    else if (pattern == @"\d") {
+        foreach (char d in inputLine) {
+            if (char.IsDigit(d)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    else {
         throw new ArgumentException($"Unhandled pattern: {pattern}");
     }
 }
 
-if (args[0] != "-E")
-{
+if (args.Length < 2 || args[0] != "-E") {
     Console.WriteLine("Expected first argument to be '-E'");
     Environment.Exit(2);
 }
