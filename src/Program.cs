@@ -56,7 +56,7 @@ static bool MatchPattern(string inputLine, string pattern) {
             }
         }
         else {
-            if (!inputLine.Contains(p)) {
+            if (!inputLine.Contains(p.Replace(@"\\", @"\"))) {
                 return false;
             }
         }
@@ -64,6 +64,7 @@ static bool MatchPattern(string inputLine, string pattern) {
 
     return true;
 }
+
 
 
 if (args.Length < 2 || args[0] != "-E") {
