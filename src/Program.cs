@@ -4,25 +4,23 @@ class Program
 {
     static int FindFirstMatchIndex(string inputLine, string pattern, bool startFlag = false, bool endFlag = false)
     {
-        if (string.IsNullOrEmpty(pattern) || string.IsNullOrEmpty(inputLine))
-            return -1;
-
         if (pattern == "$" && inputLine == "")
             return 0;
 
         if (pattern == "\\d" || pattern == "\\w")
         {
-            for (int idx = 0; idx < inputLine.Length; idx++)
+            for (int i = 0; i < inputLine.Length; i++)
             {
-                if ((pattern == "\\d" && Char.IsDigit(inputLine[idx])) ||
-                    (pattern == "\\w" && (Char.IsLetterOrDigit(inputLine[idx]))))
+                char currentChar = inputLine[i];
+                if ((pattern == "\\d" && char.IsDigit(currentChar)) ||
+                    (pattern == "\\w" && (char.IsLetterOrDigit(currentChar))))
                 {
-                    if (!startFlag || (startFlag && idx == 0))
-                        return idx + 1;
+                    if (!startFlag || (startFlag && i == 0))
+                        return i + 1;
                 }
             }
         }
-        else if (pattern[0] == '[' && pattern[pattern.Length - 1] == ']')
+        else if (pattern.StartsWith("[") && pattern.EndsWith("]"))
         {
             if (pattern[1] == '^')
             {
@@ -66,21 +64,18 @@ class Program
 
     static bool MatchPatternSequence(string inputLine, string pattern)
     {
-        if (string.IsNullOrEmpty(pattern) || string.IsNullOrEmpty(inputLine))
-            return false;
-
         bool startFlag = false;
         bool endFlag = false;
 
         while (!string.IsNullOrEmpty(pattern))
         {
-            if (pattern[0] == '^')
+            if (pattern.StartsWith("^"))
             {
                 startFlag = true;
                 pattern = pattern.Substring(1);
             }
 
-            if (pattern[pattern.Length - 1] == '$')
+            if (pattern.EndsWith("$"))
             {
                 endFlag = true;
                 pattern = pattern.Substring(0, pattern.Length - 1);
@@ -92,11 +87,9 @@ class Program
                 currentPattern = pattern.Substring(0, 2);
                 pattern = pattern.Substring(2);
             }
-            else if (pattern.StartsWith("["))
+            else if (pattern.StartsWith("[") && pattern.EndsWith("]"))
             {
-                int closingIndex = pattern.IndexOf(']') + 1;
-                if (closingIndex == 0)
-                    throw new ArgumentException("Closing bracket not found in pattern");
+                int closingIndex = pattern.IndexOf("]") + 1;
                 currentPattern = pattern.Substring(0, closingIndex);
                 pattern = pattern.Substring(closingIndex);
             }
@@ -148,17 +141,18 @@ class Program
     {
         if (args.Length < 2 || args[0] != "-E")
         {
-            Console.WriteLine("Usage: Program -E <pattern>");
-            Environment.ExitCode = 2; // Incorrect usage exit code
-            return;
+            Console.WriteLine("Expected first argument to be '-E'");
+            Environment.Exit(2);
         }
 
         string pattern = args[1];
         string inputLine = Console.In.ReadToEnd().Trim();
 
+        Console.WriteLine("Logs from your program will appear here!");
+
         if (MatchPatternSequence(inputLine, pattern))
-            Environment.ExitCode = 0; // Successful match exit code
+            Environment.Exit(0);
         else
-            Environment.ExitCode = 1; // No match exit code
+            Environment.Exit(1);
     }
 }
