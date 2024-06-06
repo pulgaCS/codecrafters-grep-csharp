@@ -5,13 +5,19 @@ static bool MatchPattern(string inputLine, string pattern) {
     if (pattern.Length == 1) {
         return inputLine.Contains(pattern);
     }
-    else if (pattern == @"\d") {
-        foreach (char c in inputLine) {
-            if (char.IsDigit(c)) {
-                return true;
+    else if (pattern.StartsWith(@"\d")) {
+        string[] parts = pattern.Split(' ');
+        if (parts.Length == 2 && parts[1] == "apple") {
+            foreach (char c in inputLine) {
+                if (char.IsDigit(c)) {
+                    return true;
+                }
             }
+            return false;
         }
-        return false;
+        else {
+            throw new ArgumentException($"Unhandled pattern: {pattern}");
+        }
     }
     else if (pattern == @"\w") {
         foreach (char c in inputLine) {
@@ -43,6 +49,7 @@ static bool MatchPattern(string inputLine, string pattern) {
         throw new ArgumentException($"Unhandled pattern: {pattern}");
     }
 }
+
 
 if (args.Length < 2 || args[0] != "-E") {
     Console.WriteLine("Expected first argument to be '-E'");
