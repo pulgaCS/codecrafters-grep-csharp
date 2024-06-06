@@ -166,12 +166,12 @@ class MyGrep
         {
             allChars = allChars.Substring(1);
         }
-        while (true)
+        while (line.Length > 0)
         {
-            int indx = IndexOfAny(line, allChars.ToCharArray());
-            if ((indx == -1) == notCheck)
+            bool charInClass = allChars.Contains((char)line[0]);
+            if ((notCheck && !charInClass) || (!notCheck && charInClass))
             {
-                if (MatchUtil(SubArray(line, indx + 1), pattern.Substring(classEndIndx + 1)))
+                if (MatchUtil(SubArray(line, 1), pattern.Substring(classEndIndx + 1)))
                 {
                     return true;
                 }
@@ -180,8 +180,9 @@ class MyGrep
             {
                 return false;
             }
-            line = SubArray(line, indx + 1);
+            line = SubArray(line, 1);
         }
+        return false;
     }
 
     static int IndexOfDigit(byte[] line)
@@ -208,18 +209,6 @@ class MyGrep
         return -1;
     }
 
-    static int IndexOfAny(byte[] line, char[] anyOf)
-    {
-        for (int i = 0; i < line.Length; i++)
-        {
-            if (Array.Exists(anyOf, element => element == (char)line[i]))
-            {
-                return i;
-            }
-        }
-        return -1;
-    }
-
     static bool IsDigit(char c)
     {
         return c >= '0' && c <= '9';
@@ -227,7 +216,7 @@ class MyGrep
 
     static bool IsAlphaNumeric(char c)
     {
-        return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || IsDigit(c);
+        return (c >= 'A' && c <= 'Z') || (c >= 'a') && (c <= 'z') || IsDigit(c);
     }
 
     static byte[] SubArray(byte[] data, int index)
