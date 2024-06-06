@@ -50,7 +50,7 @@ if (args.Length < 2 || args[0] != "-E") {
 }
 
 string pattern = args[1];
-string inputLine = Console.In.ReadToEnd();
+string inputLine = args[2];
 
 // You can use print statements as follows for debugging, they'll be visible when running tests.
 Console.WriteLine("Logs from your program will appear here!");
