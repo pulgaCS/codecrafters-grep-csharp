@@ -7,7 +7,7 @@ class Program
         // If the pattern ends with "$"
         if (pattern.EndsWith("$"))
         {
-            // Check if the input line ends with the preceding pattern
+            // Check if the input line ends with the pattern
             return MatchHere(inputLine, pattern.Substring(0, pattern.Length - 1), inputLine);
         }
         else
