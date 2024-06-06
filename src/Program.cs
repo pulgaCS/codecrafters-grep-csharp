@@ -2,25 +2,6 @@ using System;
 using System.IO;
 
 static bool MatchPattern(string inputLine, string pattern) {
-    // Check if the pattern contains whitespace
-    if (pattern.Contains(" ")) {
-        // Split the pattern into parts
-        string[] patternParts = pattern.Split(' ');
-
-        // Match the first part of the pattern
-        if (!MatchPattern(inputLine, patternParts[0]))
-            return false;
-
-        // Match the rest of the pattern
-        if (inputLine.Length >= patternParts[0].Length) {
-            return MatchPattern(inputLine.Substring(patternParts[0].Length), string.Join(" ", patternParts.Skip(1)));
-        }
-        else {
-            return false;
-        }
-    }
-
-    // Handle other patterns like \d, \w, [^abc], etc.
     if (pattern.Length == 1) {
         return inputLine.Contains(pattern);
     }
@@ -41,7 +22,6 @@ static bool MatchPattern(string inputLine, string pattern) {
         return false;
     }
     else if (pattern.Length > 2 && pattern[0] == '[' && pattern[pattern.Length - 1] == ']') {
-        // Handle character classes like [^abc]
         if (pattern[1] == '^') {
             foreach (char c in inputLine) {
                 if (!pattern.Substring(2, pattern.Length - 3).Contains(c)) {
@@ -70,22 +50,12 @@ if (args.Length < 2 || args[0] != "-E") {
 }
 
 string pattern = args[1];
-bool matchFound = false;
-int character;
+string inputLine = Console.In.ReadToEnd();
 
-while ((character = Console.In.Read()) != -1) {
-    if (character == '\n') {
-        // End of line, break the loop
-        break;
-    }
-    char c = (char)character;
-    if (!matchFound && MatchPattern(c.ToString(), pattern)) {
-        matchFound = true;
-        break;
-    }
-}
+// You can use print statements as follows for debugging, they'll be visible when running tests.
+Console.WriteLine("Logs from your program will appear here!");
 
-if (matchFound) {
+if (MatchPattern(inputLine, pattern)) {
     Environment.Exit(0);
 }
 else {
