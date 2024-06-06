@@ -1,12 +1,17 @@
 using System;
 using System.IO;
+using System.Text;
 
 static bool MatchPattern(string inputLine, string pattern) {
-    for (int i = 0; i <= inputLine.Length - pattern.Length; i++) {
+    int inputLength = inputLine.Length;
+    int patternLength = pattern.Length;
+
+    for (int i = 0; i <= inputLength - patternLength; i++) {
         if (MatchFromIndex(inputLine, pattern, i)) {
             return true;
         }
     }
+
     return false;
 }
 
@@ -22,8 +27,20 @@ static bool MatchFromIndex(string inputLine, string pattern, int index) {
             if (patternIndex >= pattern.Length) {
                 return false;
             }
+
             char escChar = pattern[patternIndex];
-            if (!MatchEscapedCharacter(inputLine, ref inputIndex, escChar)) {
+            switch (escChar) {
+                case 'd':
+                if (!char.IsDigit(inputLine[inputIndex])) {
+                    return false;
+                }
+                break;
+                case 'w':
+                if (!char.IsLetterOrDigit(inputLine[inputIndex])) {
+                    return false;
+                }
+                break;
+                default:
                 return false;
             }
         }
@@ -62,25 +79,6 @@ static bool MatchFromIndex(string inputLine, string pattern, int index) {
     }
 
     return patternIndex == pattern.Length;
-}
-
-static bool MatchEscapedCharacter(string inputLine, ref int inputIndex, char escChar) {
-    switch (escChar) {
-        case 'd':
-        if (!char.IsDigit(inputLine[inputIndex])) {
-            return false;
-        }
-        break;
-        case 'w':
-        if (!char.IsLetterOrDigit(inputLine[inputIndex])) {
-            return false;
-        }
-        break;
-        default:
-        return false;
-    }
-    inputIndex++;
-    return true;
 }
 
 if (args.Length < 2 || args[0] != "-E") {
