@@ -2,52 +2,88 @@ using System;
 using System.IO;
 
 static bool MatchPattern(string inputLine, string pattern) {
-    if (pattern.Length == 1) {
-        return inputLine.Contains(pattern);
-    }
-    else if (pattern.StartsWith(@"\d ")) {
-        string wordToMatch = pattern.Substring(3);
-        foreach (char c in inputLine) {
-            if (char.IsDigit(c)) {
-                int index = inputLine.IndexOf(c);
-                string substring = inputLine.Substring(index + 1);
-                return substring.StartsWith(wordToMatch);
+    string[] patterns = pattern.Split(' ');
+
+    foreach (string p in patterns) {
+        if (p.Length == 1) {
+            if (!inputLine.Contains(p)) {
+                return false;
             }
         }
-        return false;
-    }
-    else if (pattern == @"\w") {
-        foreach (char c in inputLine) {
-            if (char.IsLetterOrDigit(c)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    else if (pattern.Length > 2 && pattern[0] == '[' && pattern[pattern.Length - 1] == ']') {
-        if (pattern[1] == '^') {
+        else if (p == @"\d") {
+            bool foundDigit = false;
             foreach (char c in inputLine) {
-                if (!pattern.Substring(2, pattern.Length - 3).Contains(c)) {
-                    return true;
+                if (char.IsDigit(c)) {
+                    foundDigit = true;
+                    break;
                 }
             }
-            return false;
+            if (!foundDigit) {
+                return false;
+            }
+        }
+        else if (p == @"\w") {
+            bool foundAlphanumeric = false;
+            foreach (char c in inputLine) {
+                if (char.IsLetterOrDigit(c)) {
+                    foundAlphanumeric = true;
+                    break;
+                }
+            }
+            if (!foundAlphanumeric) {
+                return false;
+            }
+        }
+        else if (p.Length > 2 && p[0] == '[' && p[p.Length - 1] == ']') {
+            bool foundChar = false;
+            if (p[1] == '^') {
+                foreach (char c in inputLine) {
+                    if (!p.Substring(2, p.Length - 3).Contains(c)) {
+                        foundChar = true;
+                        break;
+                    }
+                }
+            }
+            else {
+                foreach (char c in inputLine) {
+                    if (p.Substring(1, p.Length - 2).Contains(c)) {
+                        foundChar = true;
+                        break;
+                    }
+                }
+            }
+            if (!foundChar) {
+                return false;
+            }
         }
         else {
-            foreach (char c in inputLine) {
-                if (pattern.Substring(1, pattern.Length - 2).Contains(c)) {
-                    return true;
-                }
+            if (!inputLine.Contains(p)) {
+                return false;
             }
-            return false;
         }
     }
-    else {
-        throw new ArgumentException($"Unhandled pattern: {pattern}");
-    }
+
+    return true;
 }
 
 
+if (args.Length < 2 || args[0] != "-E") {
+    Console.WriteLine("Expected first argument to be '-E'");
+    Environment.Exit(2);
+}
+
+string pattern = args[1];
+string inputLine = Console.In.ReadToEnd();
+
+// You can use print statements as follows for debugging, they'll be visible when running tests.
+Console.WriteLine("Logs from your program will appear here!");
+
+if (MatchPattern(inputLine, pattern)) {
+    Environment.Exit(0);
+}
+else {
+    Environment.Exit(1);
+}
 
 if (args.Length < 2 || args[0] != "-E") {
     Console.WriteLine("Expected first argument to be '-E'");
