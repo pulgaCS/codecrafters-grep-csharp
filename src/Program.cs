@@ -21,6 +21,14 @@ static bool MatchPattern(string inputLine, string pattern) {
         }
         return false;
     }
+    else if (pattern == @"\s") {
+        foreach (char c in inputLine) {
+            if (char.IsWhiteSpace(c)) {
+                return true;
+            }
+        }
+        return false;
+    }
     else if (pattern.Length > 2 && pattern[0] == '[' && pattern[pattern.Length - 1] == ']') {
         if (pattern[1] == '^') {
             foreach (char c in inputLine) {
@@ -44,13 +52,14 @@ static bool MatchPattern(string inputLine, string pattern) {
     }
 }
 
+
 if (args.Length < 2 || args[0] != "-E") {
     Console.WriteLine("Expected first argument to be '-E'");
     Environment.Exit(2);
 }
 
 string pattern = args[1];
-string inputLine = args[2];
+string inputLine = Console.In.ReadToEnd();
 
 // You can use print statements as follows for debugging, they'll be visible when running tests.
 Console.WriteLine("Logs from your program will appear here!");
