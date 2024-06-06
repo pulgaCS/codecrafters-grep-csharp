@@ -12,7 +12,12 @@ static bool MatchPattern(string inputLine, string pattern) {
             return false;
 
         // Match the rest of the pattern
-        return MatchPattern(inputLine.Substring(patternParts[0].Length), string.Join(" ", patternParts.Skip(1)));
+        if (inputLine.Length >= patternParts[0].Length) {
+            return MatchPattern(inputLine.Substring(patternParts[0].Length), string.Join(" ", patternParts.Skip(1)));
+        }
+        else {
+            return false;
+        }
     }
 
     // Handle other patterns like \d, \w, [^abc], etc.
