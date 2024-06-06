@@ -1,17 +1,12 @@
 using System;
 using System.IO;
-using System.Text;
 
 static bool MatchPattern(string inputLine, string pattern) {
-    int inputLength = inputLine.Length;
-    int patternLength = pattern.Length;
-
-    for (int i = 0; i <= inputLength - patternLength; i++) {
+    for (int i = 0; i <= inputLine.Length - pattern.Length; i++) {
         if (MatchFromIndex(inputLine, pattern, i)) {
             return true;
         }
     }
-
     return false;
 }
 
@@ -27,7 +22,6 @@ static bool MatchFromIndex(string inputLine, string pattern, int index) {
             if (patternIndex >= pattern.Length) {
                 return false;
             }
-
             char escChar = pattern[patternIndex];
             switch (escChar) {
                 case 'd':
