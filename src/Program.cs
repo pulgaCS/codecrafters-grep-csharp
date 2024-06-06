@@ -1,145 +1,75 @@
 using System;
-using System.IO;
-using System.Text;
 
-// This function checks if a given input line matches a given pattern.
-static bool MatchPattern(string inputLine, string pattern)
+class Program
 {
-    // Get the lengths of the input line and the pattern.
-    int inputLength = inputLine.Length;
-    int patternLength = pattern.Length;
-
-    // Loop through the input line to find potential matches with the pattern.
-    for (int i = 0; i <= inputLength - patternLength; i++)
+    static bool MatchPattern(string inputLine, string pattern)
     {
-        // Check if there is a match starting from the current index i.
-        if (MatchFromIndex(inputLine, pattern, i))
-        {
-            return true; // If there's a match, return true.
-        }
+        return MatchHere(inputLine, pattern, inputLine);
     }
 
-    return false; // If no match is found, return false.
-}
-
-static bool MatchFromIndex(string inputLine, string pattern, int index)
-{
-    int inputIndex = index;
-    int patternIndex = 0;
-
-    while (patternIndex < pattern.Length && inputIndex < inputLine.Length)
+    static bool MatchHere(string remainingInput, string pattern, string inputLine)
     {
-        char patternChar = pattern[patternIndex];
+        if (pattern == "")
+            return true;
 
-        if (patternChar == '\\')
+        if (remainingInput == "")
+            return false;
+
+        if (pattern.StartsWith("\\d"))
         {
-            patternIndex++;
-            if (patternIndex >= pattern.Length)
-            {
-                return false;
-            }
-
-            char escChar = pattern[patternIndex];
-            switch (escChar)
-            {
-                case 'd':
-                if (!char.IsDigit(inputLine[inputIndex]))
-                {
-                    return false;
-                }
-                break;
-                case 'w':
-                if (!char.IsLetterOrDigit(inputLine[inputIndex]))
-                {
-                    return false;
-                }
-                break;
-                default:
-                return false;
-            }
+            if (Char.IsDigit(remainingInput[0]))
+                return MatchHere(remainingInput.Substring(1), pattern.Substring(2), inputLine);
+            else
+                return MatchHere(remainingInput.Substring(1), pattern, inputLine);
         }
-        else if (patternChar == '[')
+        else if (pattern.StartsWith("\\w"))
         {
-            patternIndex++;
-            bool negate = pattern[patternIndex] == '^';
-            if (negate)
-            {
-                patternIndex++;
-            }
-
-            StringBuilder charClass = new StringBuilder();
-            while (patternIndex < pattern.Length && pattern[patternIndex] != ']')
-            {
-                charClass.Append(pattern[patternIndex]);
-                patternIndex++;
-            }
-
-            if (patternIndex >= pattern.Length || pattern[patternIndex] != ']')
-            {
+            if (Char.IsLetterOrDigit(remainingInput[0]))
+                return MatchHere(remainingInput.Substring(1), pattern.Substring(2), inputLine);
+            else
+                return MatchHere(remainingInput.Substring(1), pattern, inputLine);
+        }
+        else if (pattern.StartsWith("[^"))
+        {
+            string charactersInNegativeCharacterGroup = pattern.Substring(2, pattern.IndexOf(']') - 2);
+            if (!charactersInNegativeCharacterGroup.Contains(remainingInput[0]))
+                return MatchHere(remainingInput.Substring(1), pattern.Substring(pattern.IndexOf(']') + 1), inputLine);
+            else
                 return false;
-            }
-
-            bool matchFound = false;
-            foreach (char c in charClass.ToString())
-            {
-                if (negate)
-                {
-                    if (c != inputLine[inputIndex])
-                    {
-                        matchFound = true;
-                        break;
-                    }
-                }
-                else
-                {
-                    if (c == inputLine[inputIndex])
-                    {
-                        matchFound = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!matchFound)
-            {
+        }
+        else if (pattern.StartsWith("["))
+        {
+            string charactersInPositiveCharacterGroup = pattern.Substring(1, pattern.IndexOf(']') - 1);
+            if (charactersInPositiveCharacterGroup.Contains(remainingInput[0]))
+                return MatchHere(remainingInput.Substring(1), pattern.Substring(pattern.IndexOf(']') + 1), inputLine);
+            else
                 return false;
-            }
         }
         else
         {
-            if (inputLine[inputIndex] != patternChar)
-            {
+            if (remainingInput[0] == pattern[0])
+                return MatchHere(remainingInput.Substring(1), pattern.Substring(1), inputLine);
+            else
                 return false;
-            }
-            inputIndex++; // Move to the next character in the input line
         }
-
-        patternIndex++;
     }
 
-    return patternIndex == pattern.Length;
-}
+    static void Main(string[] args)
+    {
+        if (args.Length < 2 || args[0] != "-E")
+        {
+            Console.WriteLine("Expected first argument to be '-E'");
+            Environment.Exit(2);
+        }
 
+        string pattern = args[1];
+        string inputLine = Console.In.ReadToEnd().Trim();
 
-// Check if the program is invoked with the correct arguments.
-if (args.Length < 2 || args[0] != "-E")
-{
-    Console.WriteLine("Expected first argument to be '-E'");
-    Environment.Exit(2); // Exit with status 2 indicating incorrect usage.
-}
+        Console.WriteLine("Logs from your program will appear here!");
 
-// Extract the pattern and input line from command-line arguments and standard input.
-string pattern = args[1];
-string inputLine = Console.In.ReadToEnd().Trim();
-
-Console.WriteLine("Logs from your program will appear here!");
-
-// Check if the input line matches the pattern.
-if (MatchPattern(inputLine, pattern))
-{
-    Environment.Exit(0); // Exit with status 0 indicating successful match.
-}
-else
-{
-    Environment.Exit(1); // Exit with status 1 indicating no match.
+        if (MatchPattern(inputLine, pattern))
+            Environment.Exit(0);
+        else
+            Environment.Exit(1);
+    }
 }
