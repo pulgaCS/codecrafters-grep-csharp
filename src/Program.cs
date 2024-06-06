@@ -1,209 +1,237 @@
 using System;
-using System.Collections.Generic;
+using System.IO;
+using System.Text;
 
-public class Token
+class MyGrep
 {
-    public TokenType Type { get; set; }
-    public string? Value { get; set; } // Make Value nullable
+    const string digitClass = "\\d";
+    const string alphaNumericClass = "\\w";
 
-    public Token(TokenType type, string? value)
+    static void Main(string[] args)
     {
-        Type = type;
-        Value = value;
-    }
-}
-
-public class Program
-{
-    public static void Main(string[] args)
-    {
-        // Sample usage of the DFA class
-        var dfa = new DFA();
-        var tokens = new List<Token>
+        if (args.Length < 2 || args[0] != "-E")
         {
-            new Token(TokenType.LITERAL, "abc"),
-            new Token(TokenType.LITERAL, "def"),
-            new Token(TokenType.END_ANCHOR, null)
-        };
-        dfa.BuildDFA(tokens);
-        Console.WriteLine(dfa.Match("abcdef")); // Should print True
-        Console.WriteLine(dfa.Match("xyz"));    // Should print False
-    }
-}
-
-public class DFA
-{
-    private bool hasStartAnchor;
-    private bool hasEndAnchor;
-    private int startState;
-    private List<Dictionary<char, int>> transitions;
-    private HashSet<int> acceptStates;
-
-    public DFA()
-    {
-        hasStartAnchor = false;
-        hasEndAnchor = false;
-        startState = 0;
-        transitions = new List<Dictionary<char, int>>();
-        acceptStates = new HashSet<int>();
-    }
-
-    public bool Match(string inputLine)
-    {
-        if (hasStartAnchor)
-        {
-            return MatchFromStart(inputLine);
+            Console.Error.WriteLine("usage: mygrep -E <pattern>");
+            Environment.Exit(2); // 1 means no lines were selected, >1 means error
         }
-        else
+
+        string pattern = args[1];
+        string input = Console.In.ReadToEnd();
+
+        bool ok = Match(Encoding.UTF8.GetBytes(input), pattern);
+
+        if (!ok)
         {
-            return MatchFromAnyPosition(inputLine);
+            Environment.Exit(1);
         }
+
+        // default exit code is 0 which means success
     }
 
-    private bool MatchFromStart(string inputLine)
+    static bool Match(byte[] line, string pattern)
     {
-        int currentState = startState;
-        int index = 0;
-        while (index < inputLine.Length)
+        //try to match first char
+        if (pattern[0] == '^')
         {
-            char ch = inputLine[index];
-            Console.WriteLine($"Processing character '{ch}' at index {index} from state {currentState}");
-
-            if (!transitions[currentState].TryGetValue(ch, out currentState))
+            return MatchUtil(line, pattern.Substring(1));
+        }
+        else if (pattern[0] == '\\')
+        {
+            if (pattern[1] == 'd')
             {
-                break;
+                return ContainsDigitAndMatch(line, pattern.Substring(2));
             }
-
-            if (index == inputLine.Length - 1 && acceptStates.Contains(currentState))
+            else if (pattern[1] == 'w')
             {
-                return true;
+                return ContainsAlphaNumericAndMatch(line, pattern.Substring(2));
             }
-
-            index++;
+            return false;
         }
-        return false;
+        else if (pattern[0] == '[')
+        {
+            return MatchCharacterClass(line, pattern);
+        }
+        return MatchUtil(line, pattern);
     }
 
-    private bool MatchFromAnyPosition(string inputLine)
+    static bool MatchUtil(byte[] line, string pattern)
     {
-        for (int startIndex = 0; startIndex < inputLine.Length; startIndex++)
+        int lineIndx = 0;
+        int i = 0;
+        int lastPatternIndexStart = 0;
+        for (i = 0; i < pattern.Length && lineIndx < line.Length; i++)
         {
-            int currentState = startState;
-            for (int index = startIndex; index < inputLine.Length; index++)
+            char r = pattern[i];
+            int classStartIndex = i;
+            if (r == '\\')
             {
-                char ch = inputLine[index];
-                Console.WriteLine($"Processing character '{ch}' at index {index} from state {currentState}");
-
-                if (!transitions[currentState].TryGetValue(ch, out currentState))
+                if (pattern[i + 1] == 'd')
                 {
-                    break;
-                }
-            }
-            if (acceptStates.Contains(currentState) && (!hasEndAnchor || startIndex + currentState == inputLine.Length))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public void BuildDFA(List<Token> tokens)
-    {
-        int state = 0;
-
-        transitions.Clear();
-
-        Console.WriteLine("Building DFA from tokens...");
-        for (int i = 0; i < tokens.Count; i++)
-        {
-            Token token = tokens[i];
-            int nextState = state + 1;
-            Console.WriteLine($"Previous state: {state} Next state: {nextState}");
-
-            if (token.Type == TokenType.DIGIT)
-            {
-                Console.WriteLine("Adding transitions for digits");
-                AddRangeTransition(state, nextState, '0', '9');
-                transitions.Add(new Dictionary<char, int>(transitions[state]));
-            }
-            else if (token.Type == TokenType.ALPHANUM)
-            {
-                Console.WriteLine("Adding transitions for alphanumerics");
-                AddRangeTransition(state, nextState, 'a', 'z');
-                AddRangeTransition(state, nextState, 'A', 'Z');
-                AddRangeTransition(state, nextState, '0', '9');
-                transitions.Add(new Dictionary<char, int>(transitions[state]));
-            }
-            else if (token.Type == TokenType.CHARACTER_GROUP)
-            {
-                Console.WriteLine($"Adding transitions for character group: {token.Value}");
-                foreach (char ch in token.Value)
-                {
-                    transitions[state][ch] = nextState;
-                }
-                transitions.Add(new Dictionary<char, int>(transitions[state]));
-            }
-            else if (token.Type == TokenType.NEGATIVE_CHARACTER_GROUP)
-            {
-                Console.WriteLine($"Adding transitions for negative character group: {token.Value}");
-                for (char ch = (char)0; ch < 128; ch++)
-                {
-                    if (token.Value.IndexOf(ch) == -1)
+                    if (!IsDigit((char)line[lineIndx]))
                     {
-                        transitions[state][ch] = nextState;
+                        return false;
                     }
                 }
-                transitions.Add(new Dictionary<char, int>(transitions[state]));
-            }
-            else if (token.Type == TokenType.START_ANCHOR)
-            {
-                hasStartAnchor = true;
-                Console.WriteLine("Adding start anchor");
-                continue;
-            }
-            else if (token.Type == TokenType.END_ANCHOR)
-            {
-                hasEndAnchor = true;
-                Console.WriteLine("Adding end anchor");
-                acceptStates.Add(state);
-                Console.WriteLine($"DFA constructed. Accepting state: {state}");
-                return;
-            }
-            else if (token.Type == TokenType.ONE_OR_MORE)
-            {
-                Console.WriteLine("Adding one or more quantifier");
-                foreach (KeyValuePair<char, int> entry in transitions[state - 1])
+                else if (pattern[i + 1] == 'w')
                 {
-                    Console.WriteLine($"Adding transition for '{entry.Key}'");
-                    transitions[state][entry.Key] = state;
+                    if (!IsAlphaNumeric((char)line[lineIndx]))
+                    {
+                        return false;
+                    }
                 }
-                Console.WriteLine($"Adding transition for literal one or more '{tokens[i - 1].Value[0]}'");
-                transitions[state][tokens[i - 1].Value[0]] = nextState;
-                continue;
+                lineIndx++;
+                i += 1;
+            }
+            else if (r == '[')
+            {
+                int classEndIndx = pattern.IndexOf(']', i + 1);
+                string allChars = pattern.Substring(i + 1, classEndIndx - i - 1);
+                bool notCheck = allChars[0] == '^';
+                if (notCheck)
+                {
+                    allChars = allChars.Substring(1);
+                }
+                bool result = allChars.Contains((char)line[lineIndx]) != notCheck;
+                if (!result)
+                {
+                    return false;
+                }
+                lineIndx++;
+                i = classEndIndx;
+            }
+            else if (r == '$')
+            {
+                return line.Length == lineIndx;
+            }
+            else if (r == (char)line[lineIndx])
+            {
+                lineIndx++;
+            }
+            else if (r == '+')
+            {
+                if (i != 0 && MatchUtil(SubArray(line, lineIndx), pattern.Substring(lastPatternIndexStart)))
+                {
+                    return true;
+                }
             }
             else
             {
-                transitions[state][token.Value[0]] = nextState;
-                Console.WriteLine($"Adding transition for literal '{token.Value[0]}'");
-                for (char ch = (char)0; ch < 128; ch++)
-                {
-                    transitions[nextState][ch] = nextState;
-                }
+                return false;
             }
-            state = nextState;
+            lastPatternIndexStart = classStartIndex;
         }
-        if (!hasEndAnchor)
-        {
-            acceptStates.Add(state);
-        }
-        Console.WriteLine($"DFA constructed. Accepting state: {state}");
+        return i == pattern.Length || (pattern[i] == '$'); // for loop breaking conditions simplifies the logic
     }
 
-    private void AddRangeTransition(int fromState, int toState, char startChar, char endChar)
+    static bool ContainsDigitAndMatch(byte[] line, string pattern)
     {
-        for (char ch = startChar; ch <= endChar; ch++)
+        while (true)
         {
-            transitions[fromState][ch] = toState;
+            int indx = IndexOfDigit(line);
+            if (indx == -1)
+            {
+                return false;
+            }
+            if (MatchUtil(SubArray(line, indx + 1), pattern))
+            {
+                return true;
+            }
+            line = SubArray(line, indx + 1);
         }
+    }
+
+    static bool ContainsAlphaNumericAndMatch(byte[] line, string pattern)
+    {
+        while (true)
+        {
+            int indx = IndexOfAlphaNumeric(line);
+            if (indx == -1)
+            {
+                return false;
+            }
+            if (MatchUtil(SubArray(line, indx + 1), pattern))
+            {
+                return true;
+            }
+            line = SubArray(line, indx + 1);
+        }
+    }
+
+    static bool MatchCharacterClass(byte[] line, string pattern)
+    {
+        string allChars = pattern.Substring(1, pattern.IndexOf(']') - 1);
+        bool notCheck = allChars[0] == '^';
+        if (notCheck)
+        {
+            allChars = allChars.Substring(1);
+        }
+        while (true)
+        {
+            int indx = IndexOfAny(line, allChars.ToCharArray());
+            bool result = notCheck ? indx == -1 : indx >= 0;
+            if (!result)
+            {
+                return false;
+            }
+            if (MatchUtil(SubArray(line, indx + 1), pattern.Substring(allChars.Length + 2)))
+            {
+                return true;
+            }
+            line = SubArray(line, indx + 1);
+        }
+    }
+
+    static int IndexOfDigit(byte[] line)
+    {
+        for (int i = 0; i < line.Length; i++)
+        {
+            if (IsDigit((char)line[i]))
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    static int IndexOfAlphaNumeric(byte[] line)
+    {
+        for (int i = 0; i < line.Length; i++)
+        {
+            if (IsAlphaNumeric((char)line[i]))
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    static int IndexOfAny(byte[] line, char[] anyOf)
+    {
+        for (int i = 0; i < line.Length; i++)
+        {
+            if (Array.Exists(anyOf, element => element == (char)line[i]))
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    static bool IsDigit(char c)
+    {
+        return c >= '0' && c <= '9';
+    }
+
+    static bool IsAlphaNumeric(char c)
+    {
+        return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || IsDigit(c);
+    }
+
+    static byte[] SubArray(byte[] data, int index)
+    {
+        int length = data.Length - index;
+        byte[] result = new byte[length];
+        Array.Copy(data, index, result, 0, length);
+        return result;
     }
 }
