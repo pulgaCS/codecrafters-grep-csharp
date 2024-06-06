@@ -1,8 +1,9 @@
 using System;
+using System.Linq;
 
-public class PatternMatcher
+class Program
 {
-    public static int FindFirstMatchIndex(string inputLine, string pattern, bool startFlag = false, bool endFlag = false)
+    static int FindFirstMatchIndex(string inputLine, string pattern, bool startFlag = false, bool endFlag = false)
     {
         if (pattern == "$" && inputLine == "")
             return 0;
@@ -11,9 +12,9 @@ public class PatternMatcher
         {
             for (int idx = 0; idx < inputLine.Length; idx++)
             {
-                char currentChar = inputLine[idx];
-                if ((pattern == "\\d" && char.IsDigit(currentChar)) ||
-                    (pattern == "\\w" && (char.IsLetterOrDigit(currentChar))))
+                char character = inputLine[idx];
+                if ((pattern == "\\d" && char.IsDigit(character)) ||
+                    (pattern == "\\w" && (char.IsLetterOrDigit(character))))
                 {
                     if (!startFlag || (startFlag && idx == 0))
                         return idx + 1;
@@ -25,15 +26,13 @@ public class PatternMatcher
             if (pattern[1] == '^')
             {
                 string negativePattern = pattern.Substring(2, pattern.Length - 3);
-                foreach (char c in negativePattern)
+                if (negativePattern.Any(c => inputLine.Contains(c)))
                 {
-                    if (inputLine.Contains(c))
-                    {
-                        if (!startFlag || (startFlag && negativePattern.IndexOf(c) == 0))
-                            return -1;
-                    }
+                    if (!startFlag || (startFlag && negativePattern.IndexOf(inputLine[0]) == 0))
+                        return -1;
                 }
-                return 0;
+                else
+                    return 0;
             }
             else
             {
@@ -62,12 +61,12 @@ public class PatternMatcher
         return -1;
     }
 
-    public static bool MatchPatternSequence(string inputLine, string pattern)
+    static bool MatchPatternSequence(string inputLine, string pattern)
     {
         bool startFlag = false;
         bool endFlag = false;
 
-        while (!string.IsNullOrEmpty(pattern))
+        while (pattern.Length > 0)
         {
             if (pattern[0] == '^')
             {
@@ -81,7 +80,7 @@ public class PatternMatcher
                 pattern = pattern.Substring(0, pattern.Length - 1);
             }
 
-            string currentPattern;
+            string currentPattern = "";
             if (pattern[0] == '\\')
             {
                 currentPattern = pattern.Substring(0, 2);
@@ -102,27 +101,28 @@ public class PatternMatcher
                 pattern = pattern.Substring(1);
             }
 
-            if (!string.IsNullOrEmpty(pattern) && pattern[0] == '.')
+            if (pattern.Length > 0 && pattern[0] == '.')
+            {
                 pattern = "^" + currentPattern + pattern;
+            }
 
-            if (!string.IsNullOrEmpty(pattern) && pattern[0] == '+')
+            if (pattern.Length > 0 && pattern[0] == '+')
             {
                 pattern = pattern.Substring(1);
-                int matchLen = 0;
+                int matchLength = 0;
                 while (true)
                 {
                     int inputStartPos = FindFirstMatchIndex(inputLine, currentPattern, startFlag, endFlag);
-                    Console.WriteLine(inputStartPos);
                     if (inputStartPos < 0)
                     {
-                        if (matchLen > 0)
+                        if (matchLength > 0)
                             break;
                         else
                             return false;
                     }
                     else
                     {
-                        matchLen++;
+                        matchLength++;
                         inputLine = inputLine.Substring(inputStartPos);
                     }
                 }
@@ -132,6 +132,7 @@ public class PatternMatcher
                 int inputStartPos = FindFirstMatchIndex(inputLine, currentPattern, startFlag, endFlag);
                 if (inputStartPos < 0)
                     return false;
+
                 inputLine = inputLine.Substring(inputStartPos);
             }
         }
@@ -139,7 +140,7 @@ public class PatternMatcher
         return true;
     }
 
-    public static void Main(string[] args)
+    static void Main(string[] args)
     {
         if (args.Length < 3 || args[0] != "-E")
         {
