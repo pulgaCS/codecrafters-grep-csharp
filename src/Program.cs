@@ -25,101 +25,95 @@ static bool MatchPattern(string inputLine, string pattern)
 // This function checks for a pattern match starting from a specific index in the input line.
 static bool MatchFromIndex(string inputLine, string pattern, int index)
 {
+    // Initialize variables to keep track of the current index in the input line and the pattern.
     int inputIndex = index;
     int patternIndex = 0;
 
+    // Loop through the pattern and input line to check for matches.
     while (patternIndex < pattern.Length && inputIndex < inputLine.Length)
     {
+        // Get the current character in the pattern.
         char patternChar = pattern[patternIndex];
 
+        // Check for escape characters.
         if (patternChar == '\\')
         {
-            patternIndex++;
+            patternIndex++; // Move to the next character after the escape character.
             if (patternIndex >= pattern.Length)
             {
-                return false;
+                return false; // If there's no character after the escape character, return false.
             }
 
+            // Get the escaped character.
             char escChar = pattern[patternIndex];
             switch (escChar)
             {
                 case 'd':
+                // Check if the current character in the input line is a digit.
                 if (!char.IsDigit(inputLine[inputIndex]))
                 {
-                    return false;
+                    return false; // If it's not a digit, return false.
                 }
                 break;
                 case 'w':
+                // Check if the current character in the input line is a letter or digit.
                 if (!char.IsLetterOrDigit(inputLine[inputIndex]))
                 {
-                    return false;
+                    return false; // If it's neither a letter nor a digit, return false.
                 }
                 break;
                 default:
-                return false;
+                return false; // Return false for unknown escape characters.
             }
         }
         else if (patternChar == '[')
         {
-            patternIndex++;
+            patternIndex++; // Move to the next character after '['.
+            // Check if the character class is negated.
             bool negate = pattern[patternIndex] == '^';
             if (negate)
             {
-                patternIndex++;
+                patternIndex++; // Move to the next character after '^'.
             }
 
+            // Find the closing bracket ']' for the character class.
             int closingBracketIndex = pattern.IndexOf(']', patternIndex);
             if (closingBracketIndex == -1)
             {
-                return false;
+                return false; // If ']' is not found, return false.
             }
 
+            // Extract the character class between '[' and ']'.
             string characterClass = pattern.Substring(patternIndex, closingBracketIndex - patternIndex);
-            patternIndex = closingBracketIndex;
+            patternIndex = closingBracketIndex; // Move pattern index to ']' position.
 
+            // Check if the current character in the input line matches the character class.
             bool matchFound = characterClass.Contains(inputLine[inputIndex]);
             if (negate)
             {
-                matchFound = !matchFound;
+                matchFound = !matchFound; // If negated, invert the match result.
             }
 
             if (!matchFound)
             {
-                return false;
+                return false; // If no match is found, return false.
             }
         }
         else
         {
-            if (char.IsDigit(patternChar))
+            // Check if the current character in the input line matches the pattern character.
+            if (inputLine[inputIndex] != patternChar)
             {
-                // Check if the pattern specifies a digit count followed by a space.
-                int count = patternChar - '0';
-                string remainingPattern = pattern.Substring(patternIndex + 1);
-                string expectedSubstring = remainingPattern.Substring(0, count);
-                if (inputIndex + count <= inputLine.Length && inputLine.Substring(inputIndex, count) == expectedSubstring)
-                {
-                    inputIndex += count;
-                    patternIndex += count;
-                    continue;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                if (inputLine[inputIndex] != patternChar)
-                {
-                    return false;
-                }
+                return false; // If there's no match, return false.
             }
         }
 
+        // Move to the next character in both the pattern and the input line.
         patternIndex++;
         inputIndex++;
     }
 
+    // Return true if the pattern has been fully matched.
     return patternIndex == pattern.Length;
 }
 
