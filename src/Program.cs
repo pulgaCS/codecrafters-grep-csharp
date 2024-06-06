@@ -10,27 +10,26 @@ static bool MatchPattern(string inputLine, string pattern) {
                 return false;
             }
         }
-        else if (p == @"\d") {
-            bool foundDigit = false;
+        else if (p.StartsWith(@"\d")) {
+            int digitCount = 1;
+            if (p.Length > 2 && char.IsDigit(p[2])) {
+                digitCount = int.Parse(p.Substring(2));
+            }
+
+            int consecutiveDigits = 0;
             foreach (char c in inputLine) {
                 if (char.IsDigit(c)) {
-                    foundDigit = true;
-                    break;
+                    consecutiveDigits++;
+                    if (consecutiveDigits == digitCount) {
+                        break;
+                    }
+                }
+                else {
+                    consecutiveDigits = 0;
                 }
             }
-            if (!foundDigit) {
-                return false;
-            }
-        }
-        else if (p == @"\w") {
-            bool foundAlphanumeric = false;
-            foreach (char c in inputLine) {
-                if (char.IsLetterOrDigit(c)) {
-                    foundAlphanumeric = true;
-                    break;
-                }
-            }
-            if (!foundAlphanumeric) {
+
+            if (consecutiveDigits != digitCount) {
                 return false;
             }
         }
