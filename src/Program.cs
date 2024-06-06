@@ -33,14 +33,19 @@ static bool MatchPattern(string inputLine, string pattern) {
                 throw new ArgumentException($"Unhandled special character: {specialChar}");
         }
     }
-    else if (pattern.Contains(" ")) {
-        string[] parts = pattern.Split(' ');
-        foreach (string part in parts) {
-            if (!inputLine.Contains(part)) {
-                return false;
+    else if (pattern.StartsWith("\\d ") && pattern.Length > 2) {
+        string[] tokens = pattern.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (tokens.Length == 2 && tokens[0] == @"\d") {
+            foreach (char c in inputLine) {
+                if (char.IsDigit(c) && inputLine.Contains(tokens[1])) {
+                    return true;
+                }
             }
+            return false;
         }
-        return true;
+        else {
+            throw new ArgumentException($"Unhandled pattern: {pattern}");
+        }
     }
     else if (pattern.Length > 2 && pattern[0] == '[' && pattern[pattern.Length - 1] == ']') {
         if (pattern[1] == '^') {
