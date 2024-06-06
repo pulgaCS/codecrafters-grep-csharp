@@ -4,11 +4,11 @@ class Program
 {
     static bool MatchPattern(string inputLine, string pattern)
     {
-        // If the pattern ends with "$"
-        if (pattern.EndsWith("$"))
+        // If the pattern starts with "^"
+        if (pattern.StartsWith("^"))
         {
-            // Check if the input line ends with the pattern
-            return MatchHere(inputLine, pattern.Substring(0, pattern.Length - 1), inputLine);
+            // Check if the input line starts with the remaining pattern
+            return MatchHere(inputLine, pattern.Substring(1), inputLine);
         }
         else
         {
