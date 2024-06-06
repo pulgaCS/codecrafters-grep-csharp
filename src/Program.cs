@@ -67,19 +67,6 @@ class Program
                 // Otherwise, the match fails
                 return false;
         }
-        // Handling one or more quantifier (+)
-        else if (pattern.StartsWith("+"))
-        {
-            // Extracting the character preceding the plus sign
-            char precedingChar = pattern[1];
-            // Matching the preceding character one or more times
-            if (remainingInput[0] == precedingChar)
-                // Continue matching the same character with the rest of the input
-                return MatchHere(remainingInput.Substring(1), pattern, inputLine);
-            else
-                // If the character does not match, the pattern fails
-                return false;
-        }
         // Handling single characters and characters not requiring special handling
         else
         {
