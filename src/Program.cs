@@ -1,15 +1,31 @@
 using System;
 using System.IO;
-using System.Collections.Generic;
+using System.Text;
 
 static bool MatchPattern(string inputLine, string pattern) {
+    int inputLength = inputLine.Length;
+    int patternLength = pattern.Length;
+
+    for (int i = 0; i <= inputLength - patternLength; i++) {
+        if (MatchFromIndex(inputLine, pattern, i)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool MatchFromIndex(string inputLine, string pattern, int index) {
+    int inputIndex = index;
     int patternIndex = 0;
-    int inputIndex = 0;
+
     while (patternIndex < pattern.Length && inputIndex < inputLine.Length) {
-        if (pattern[patternIndex] == '\\') {
+        char patternChar = pattern[patternIndex];
+
+        if (patternChar == '\\') {
             patternIndex++;
             if (patternIndex >= pattern.Length) {
-                throw new ArgumentException($"Invalid escape sequence in pattern: {pattern}");
+                return false;
             }
 
             char escChar = pattern[patternIndex];
@@ -25,30 +41,43 @@ static bool MatchPattern(string inputLine, string pattern) {
                 }
                 break;
                 default:
-                throw new ArgumentException($"Unhandled escape sequence: \\{escChar}");
-            }
-        }
-        else if (pattern[patternIndex] == '[') {
-            bool negated = (pattern[patternIndex + 1] == '^');
-            int start = patternIndex + (negated ? 2 : 1);
-            int end = pattern.IndexOf(']', start);
-            if (end == -1) {
-                throw new ArgumentException($"Unmatched '[' in pattern: {pattern}");
-            }
-            string charClass = pattern.Substring(start, end - start);
-            bool matchFound = charClass.Contains(inputLine[inputIndex]);
-            if (negated) matchFound = !matchFound;
-            if (!matchFound) return false;
-            patternIndex = end;
-        }
-        else {
-            if (pattern[patternIndex] != inputLine[inputIndex]) {
                 return false;
             }
         }
+        else if (patternChar == '[') {
+            patternIndex++;
+            bool negate = pattern[patternIndex] == '^';
+            if (negate) {
+                patternIndex++;
+            }
+
+            int closingBracketIndex = pattern.IndexOf(']', patternIndex);
+            if (closingBracketIndex == -1) {
+                return false;
+            }
+
+            string characterClass = pattern.Substring(patternIndex, closingBracketIndex - patternIndex);
+            patternIndex = closingBracketIndex;
+
+            bool matchFound = characterClass.Contains(inputLine[inputIndex]);
+            if (negate) {
+                matchFound = !matchFound;
+            }
+
+            if (!matchFound) {
+                return false;
+            }
+        }
+        else {
+            if (inputLine[inputIndex] != patternChar) {
+                return false;
+            }
+        }
+
         patternIndex++;
         inputIndex++;
     }
+
     return patternIndex == pattern.Length;
 }
 
@@ -60,7 +89,6 @@ if (args.Length < 2 || args[0] != "-E") {
 string pattern = args[1];
 string inputLine = Console.In.ReadToEnd().Trim();
 
-// You can use print statements as follows for debugging, they'll be visible when running tests.
 Console.WriteLine("Logs from your program will appear here!");
 
 if (MatchPattern(inputLine, pattern)) {
