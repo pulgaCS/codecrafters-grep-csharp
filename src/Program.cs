@@ -5,15 +5,17 @@ static bool MatchPattern(string inputLine, string pattern) {
     string[] patterns = pattern.Split(' ');
 
     foreach (string p in patterns) {
-        if (p.Length == 1) {
-            if (!inputLine.Contains(p)) {
+        string currentPattern = p.Replace(@"\\", @"\"); // Replace double backslashes with single backslash
+
+        if (currentPattern.Length == 1) {
+            if (!inputLine.Contains(currentPattern)) {
                 return false;
             }
         }
-        else if (p.StartsWith(@"\d")) {
+        else if (currentPattern.StartsWith(@"\d")) {
             int digitCount = 1;
-            if (p.Length > 2 && char.IsDigit(p[2])) {
-                digitCount = int.Parse(p.Substring(2));
+            if (currentPattern.Length > 2 && char.IsDigit(currentPattern[2])) {
+                digitCount = int.Parse(currentPattern.Substring(2));
             }
 
             int consecutiveDigits = 0;
@@ -33,11 +35,11 @@ static bool MatchPattern(string inputLine, string pattern) {
                 return false;
             }
         }
-        else if (p.Length > 2 && p[0] == '[' && p[p.Length - 1] == ']') {
+        else if (currentPattern.Length > 2 && currentPattern[0] == '[' && currentPattern[currentPattern.Length - 1] == ']') {
             bool foundChar = false;
-            if (p[1] == '^') {
+            if (currentPattern[1] == '^') {
                 foreach (char c in inputLine) {
-                    if (!p.Substring(2, p.Length - 3).Contains(c)) {
+                    if (!currentPattern.Substring(2, currentPattern.Length - 3).Contains(c)) {
                         foundChar = true;
                         break;
                     }
@@ -45,7 +47,7 @@ static bool MatchPattern(string inputLine, string pattern) {
             }
             else {
                 foreach (char c in inputLine) {
-                    if (p.Substring(1, p.Length - 2).Contains(c)) {
+                    if (currentPattern.Substring(1, currentPattern.Length - 2).Contains(c)) {
                         foundChar = true;
                         break;
                     }
@@ -56,7 +58,7 @@ static bool MatchPattern(string inputLine, string pattern) {
             }
         }
         else {
-            if (!inputLine.Contains(p.Replace(@"\\", @"\"))) {
+            if (!inputLine.Contains(currentPattern)) {
                 return false;
             }
         }
