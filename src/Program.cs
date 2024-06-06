@@ -5,7 +5,7 @@ static bool MatchPattern(string inputLine, string pattern) {
     int patternIndex = 0;
 
     while (patternIndex < pattern.Length) {
-        if (pattern[patternIndex] == '\') {
+        if (pattern[patternIndex] == '\\') {
             if (patternIndex + 1 >= pattern.Length) {
                 throw new ArgumentException($"Invalid escape sequence at end of pattern: {pattern}");
             }
