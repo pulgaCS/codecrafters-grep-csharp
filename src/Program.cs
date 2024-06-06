@@ -1,22 +1,34 @@
 using System;
 using System.Collections.Generic;
 
-public enum TokenType
-{
-    DIGIT,
-    ALPHANUM,
-    CHARACTER_GROUP,
-    NEGATIVE_CHARACTER_GROUP,
-    START_ANCHOR,
-    END_ANCHOR,
-    ONE_OR_MORE,
-    LITERAL
-}
-
 public class Token
 {
     public TokenType Type { get; set; }
-    public string Value { get; set; }
+    public string? Value { get; set; } // Make Value nullable
+
+    public Token(TokenType type, string? value)
+    {
+        Type = type;
+        Value = value;
+    }
+}
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        // Sample usage of the DFA class
+        var dfa = new DFA();
+        var tokens = new List<Token>
+        {
+            new Token(TokenType.LITERAL, "abc"),
+            new Token(TokenType.LITERAL, "def"),
+            new Token(TokenType.END_ANCHOR, null)
+        };
+        dfa.BuildDFA(tokens);
+        Console.WriteLine(dfa.Match("abcdef")); // Should print True
+        Console.WriteLine(dfa.Match("xyz"));    // Should print False
+    }
 }
 
 public class DFA
