@@ -92,12 +92,11 @@ static bool MatchFromIndex(string inputLine, string pattern, int index)
         {
             if (char.IsDigit(patternChar))
             {
-                // Check if the pattern specifies a digit count followed by characters.
+                // Check if the pattern specifies a digit count followed by a space.
                 int count = patternChar - '0';
                 string remainingPattern = pattern.Substring(patternIndex + 1);
                 string expectedSubstring = remainingPattern.Substring(0, count);
-                if (inputIndex + count <= inputLine.Length &&
-                    inputLine.Substring(inputIndex, count) == expectedSubstring)
+                if (inputIndex + count <= inputLine.Length && inputLine.Substring(inputIndex, count) == expectedSubstring)
                 {
                     inputIndex += count;
                     patternIndex += count;
@@ -108,7 +107,13 @@ static bool MatchFromIndex(string inputLine, string pattern, int index)
                     return false;
                 }
             }
-
+            else
+            {
+                if (inputLine[inputIndex] != patternChar)
+                {
+                    return false;
+                }
+            }
         }
 
         patternIndex++;
