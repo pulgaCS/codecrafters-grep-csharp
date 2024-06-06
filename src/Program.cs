@@ -1,28 +1,14 @@
 using System;
 using System.IO;
-using System.Text;
 
 static bool MatchPattern(string inputLine, string pattern) {
-    int inputLength = inputLine.Length;
-    int patternLength = pattern.Length;
-
-    for (int i = 0; i <= inputLength - patternLength; i++) {
-        if (MatchFromIndex(inputLine, pattern, i)) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-static bool MatchFromIndex(string inputLine, string pattern, int index) {
-    int inputIndex = index;
     int patternIndex = 0;
+    int inputIndex = 0;
 
     while (patternIndex < pattern.Length && inputIndex < inputLine.Length) {
-        char patternChar = pattern[patternIndex];
+        char currentPatternChar = pattern[patternIndex];
 
-        if (patternChar == '\\') {
+        if (currentPatternChar == '\\') {
             patternIndex++;
             if (patternIndex >= pattern.Length) {
                 return false;
@@ -44,7 +30,7 @@ static bool MatchFromIndex(string inputLine, string pattern, int index) {
                 return false;
             }
         }
-        else if (patternChar == '[') {
+        else if (currentPatternChar == '[') {
             patternIndex++;
             bool negate = pattern[patternIndex] == '^';
             if (negate) {
@@ -69,7 +55,7 @@ static bool MatchFromIndex(string inputLine, string pattern, int index) {
             }
         }
         else {
-            if (inputLine[inputIndex] != patternChar) {
+            if (inputLine[inputIndex] != currentPatternChar) {
                 return false;
             }
         }
