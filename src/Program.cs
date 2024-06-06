@@ -1,63 +1,47 @@
 using System;
+using System.IO;
 
 static bool MatchPattern(string inputLine, string pattern) {
-    int inputIndex = 0;
-    int patternIndex = 0;
-
-    while (patternIndex < pattern.Length) {
-        if (pattern[patternIndex] == '\\') {
-            if (patternIndex + 1 >= pattern.Length) {
-                throw new ArgumentException($"Invalid escape sequence at end of pattern: {pattern}");
-            }
-
-            char nextPatternChar = pattern[patternIndex + 1];
-
-            if (nextPatternChar == 'd') {
-                if (inputIndex >= inputLine.Length || !char.IsDigit(inputLine[inputIndex])) {
-                    return false;
-                }
-                inputIndex++;
-                patternIndex += 2;
-            }
-            else if (nextPatternChar == 'w') {
-                if (inputIndex >= inputLine.Length || !char.IsLetterOrDigit(inputLine[inputIndex])) {
-                    return false;
-                }
-                inputIndex++;
-                patternIndex += 2;
-            }
-            else {
-                throw new ArgumentException($"Unhandled escape sequence: \\{nextPatternChar}");
+    if (pattern.Length == 1) {
+        return inputLine.Contains(pattern);
+    }
+    else if (pattern == @"\d") {
+        foreach (char c in inputLine) {
+            if (char.IsDigit(c)) {
+                return true;
             }
         }
-        else if (pattern[patternIndex] == '[') {
-            int closingBracket = pattern.IndexOf(']', patternIndex);
-            if (closingBracket == -1) {
-                throw new ArgumentException($"Unclosed character class in pattern: {pattern}");
+        return false;
+    }
+    else if (pattern == @"\w") {
+        foreach (char c in inputLine) {
+            if (char.IsLetterOrDigit(c)) {
+                return true;
             }
-
-            string charClass = pattern.Substring(patternIndex + 1, closingBracket - patternIndex - 1);
-            bool isNegated = charClass.StartsWith("^");
-            string charSet = isNegated ? charClass.Substring(1) : charClass;
-
-            if (inputIndex >= inputLine.Length ||
-                isNegated == charSet.Contains(inputLine[inputIndex])) {
-                return false;
+        }
+        return false;
+    }
+    else if (pattern.Length > 2 && pattern[0] == '[' && pattern[pattern.Length - 1] == ']') {
+        if (pattern[1] == '^') {
+            foreach (char c in inputLine) {
+                if (!pattern.Substring(2, pattern.Length - 3).Contains(c)) {
+                    return true;
+                }
             }
-            inputIndex++;
-            patternIndex = closingBracket + 1;
+            return false;
         }
         else {
-            if (inputIndex >= inputLine.Length || inputLine[inputIndex] != pattern[patternIndex]) {
-                return false;
+            foreach (char c in inputLine) {
+                if (pattern.Substring(1, pattern.Length - 2).Contains(c)) {
+                    return true;
+                }
             }
-            inputIndex++;
-            patternIndex++;
+            return false;
         }
     }
-
-    // Ensure all characters in the pattern and input line are consumed
-    return patternIndex == pattern.Length && (inputIndex == inputLine.Length || char.IsWhiteSpace(inputLine[inputIndex]));
+    else {
+        throw new ArgumentException($"Unhandled pattern: {pattern}");
+    }
 }
 
 if (args.Length < 2 || args[0] != "-E") {
@@ -66,9 +50,9 @@ if (args.Length < 2 || args[0] != "-E") {
 }
 
 string pattern = args[1];
-string inputLine = Console.In.ReadToEnd().Trim();
+string inputLine = Console.In.ReadToEnd();
 
-// Debug log
+// You can use print statements as follows for debugging, they'll be visible when running tests.
 Console.WriteLine("Logs from your program will appear here!");
 
 if (MatchPattern(inputLine, pattern)) {
