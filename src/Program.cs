@@ -23,18 +23,7 @@ static bool MatchFromIndex(string inputLine, string pattern, int index) {
                 return false;
             }
             char escChar = pattern[patternIndex];
-            switch (escChar) {
-                case 'd':
-                if (!char.IsDigit(inputLine[inputIndex])) {
-                    return false;
-                }
-                break;
-                case 'w':
-                if (!char.IsLetterOrDigit(inputLine[inputIndex])) {
-                    return false;
-                }
-                break;
-                default:
+            if (!MatchEscapedCharacter(inputLine, ref inputIndex, escChar)) {
                 return false;
             }
         }
@@ -73,6 +62,25 @@ static bool MatchFromIndex(string inputLine, string pattern, int index) {
     }
 
     return patternIndex == pattern.Length;
+}
+
+static bool MatchEscapedCharacter(string inputLine, ref int inputIndex, char escChar) {
+    switch (escChar) {
+        case 'd':
+        if (!char.IsDigit(inputLine[inputIndex])) {
+            return false;
+        }
+        break;
+        case 'w':
+        if (!char.IsLetterOrDigit(inputLine[inputIndex])) {
+            return false;
+        }
+        break;
+        default:
+        return false;
+    }
+    inputIndex++;
+    return true;
 }
 
 if (args.Length < 2 || args[0] != "-E") {
