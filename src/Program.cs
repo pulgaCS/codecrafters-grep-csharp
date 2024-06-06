@@ -57,12 +57,15 @@ static bool MatchPattern(string inputLine, string pattern) {
             }
         }
         else {
-            throw new ArgumentException($"Unhandled pattern: {p}");
+            if (!inputLine.Contains(p)) {
+                return false;
+            }
         }
     }
 
     return true;
 }
+
 
 if (args.Length < 2 || args[0] != "-E") {
     Console.WriteLine("Expected first argument to be '-E'");
