@@ -1,10 +1,6 @@
 using System;
 using System.IO;
 
-static bool IsDigit(char c) {
-    return c >= '0' && c <= '9';
-}
-
 static bool MatchPattern(string inputLine, string pattern) {
     string[] patterns = pattern.Split(' ');
 
@@ -17,7 +13,7 @@ static bool MatchPattern(string inputLine, string pattern) {
         else if (p == @"\d") {
             bool foundDigit = false;
             foreach (char c in inputLine) {
-                if (IsDigit(c)) {
+                if (char.IsDigit(c)) {
                     foundDigit = true;
                     break;
                 }
@@ -69,6 +65,7 @@ static bool MatchPattern(string inputLine, string pattern) {
 
     return true;
 }
+
 
 
 if (args.Length < 2 || args[0] != "-E") {
