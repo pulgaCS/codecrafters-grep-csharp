@@ -20,6 +20,27 @@ class Program
         if (remainingInput == "")
             return false;
 
+        // Handling one or more quantifier (+)
+        if (pattern.StartsWith("+"))
+        {
+            // Extracting the character preceding the plus sign
+            char precedingChar = pattern[1];
+            // If the next character in the input matches the preceding character
+            if (remainingInput[0] == precedingChar)
+            {
+                // Keep matching the same character as long as it occurs consecutively
+                while (remainingInput.Length > 0 && remainingInput[0] == precedingChar)
+                {
+                    remainingInput = remainingInput.Substring(1);
+                }
+                // Continue matching with the rest of the pattern and input
+                return MatchHere(remainingInput, pattern.Substring(2), inputLine);
+            }
+            else
+                // If the character does not match, the pattern fails
+                return false;
+        }
+
         // Handling escape sequences like \d and \w
         if (pattern.StartsWith("\\d"))
         {
