@@ -1,155 +1,197 @@
 using System;
-using System.Text.RegularExpressions;
+using System.Collections.Generic;
 
-public class PatternMatcher
+public enum TokenType
 {
-    public static int FindFirstMatchIndex(string inputLine, string pattern, bool startFlag = false, bool endFlag = false)
-    {
-        if (pattern == "$" && inputLine == "")
-            return 0;
+    DIGIT,
+    ALPHANUM,
+    CHARACTER_GROUP,
+    NEGATIVE_CHARACTER_GROUP,
+    START_ANCHOR,
+    END_ANCHOR,
+    ONE_OR_MORE,
+    LITERAL
+}
 
-        if (pattern == "\\d" || pattern == "\\w")
+public class Token
+{
+    public TokenType Type { get; set; }
+    public string Value { get; set; }
+}
+
+public class DFA
+{
+    private bool hasStartAnchor;
+    private bool hasEndAnchor;
+    private int startState;
+    private List<Dictionary<char, int>> transitions;
+    private HashSet<int> acceptStates;
+
+    public DFA()
+    {
+        hasStartAnchor = false;
+        hasEndAnchor = false;
+        startState = 0;
+        transitions = new List<Dictionary<char, int>>();
+        acceptStates = new HashSet<int>();
+    }
+
+    public bool Match(string inputLine)
+    {
+        if (hasStartAnchor)
         {
-            for (int idx = 0; idx < inputLine.Length; idx++)
-            {
-                char c = inputLine[idx];
-                if ((pattern == "\\d" && char.IsDigit(c)) || (pattern == "\\w" && (char.IsLetterOrDigit(c))))
-                {
-                    if (!startFlag || (startFlag && idx == 0))
-                        return idx + 1;
-                }
-            }
-        }
-        else if (pattern[0] == '[' && pattern[pattern.Length - 1] == ']')
-        {
-            if (pattern[1] == '^')
-            {
-                string negativePattern = pattern.Substring(2, pattern.Length - 3);
-                foreach (char c in negativePattern)
-                {
-                    if (inputLine.Contains(c))
-                    {
-                        if (!startFlag || (startFlag && negativePattern.IndexOf(c) == 0))
-                            return -1;
-                    }
-                }
-                return 0;
-            }
-            else
-            {
-                string positivePattern = pattern.Substring(1, pattern.Length - 2);
-                foreach (char c in positivePattern)
-                {
-                    int idx = inputLine.IndexOf(c);
-                    if (idx != -1)
-                    {
-                        if (!startFlag || (startFlag && idx == 0))
-                            return idx + 1;
-                    }
-                }
-            }
+            return MatchFromStart(inputLine);
         }
         else
         {
-            int idx = inputLine.IndexOf(pattern);
-            if (idx >= 0)
-            {
-                if (!startFlag || (startFlag && idx == 0))
-                    return idx + 1;
-            }
+            return MatchFromAnyPosition(inputLine);
         }
-        return -1;
     }
 
-    public static bool MatchPatternSequence(string inputLine, string pattern)
+    private bool MatchFromStart(string inputLine)
     {
-        bool startFlag = false;
-        bool endFlag = false;
-
-        while (pattern.Length > 0)
+        int currentState = startState;
+        int index = 0;
+        while (index < inputLine.Length)
         {
-            if (pattern[0] == '^')
+            char ch = inputLine[index];
+            Console.WriteLine($"Processing character '{ch}' at index {index} from state {currentState}");
+
+            if (!transitions[currentState].TryGetValue(ch, out currentState))
             {
-                startFlag = true;
-                pattern = pattern.Substring(1);
+                break;
             }
 
-            if (pattern[pattern.Length - 1] == '$')
+            if (index == inputLine.Length - 1 && acceptStates.Contains(currentState))
             {
-                endFlag = true;
-                pattern = pattern.Substring(0, pattern.Length - 1);
+                return true;
             }
 
-            string currentPattern;
-            if (pattern[0] == '\\')
-            {
-                currentPattern = pattern.Substring(0, 2);
-                pattern = pattern.Substring(2);
-            }
-            else if (pattern[0] == '[')
-            {
-                int closingIndex = pattern.IndexOf(']') + 1;
-                if (closingIndex == 0)
-                    throw new ArgumentException("Closing not found");
-                currentPattern = pattern.Substring(0, closingIndex);
-                pattern = pattern.Substring(closingIndex);
-            }
-            else
-            {
-                currentPattern = pattern.Substring(0, 1);
-                pattern = pattern.Substring(1);
-            }
+            index++;
+        }
+        return false;
+    }
 
-            if (pattern.Length > 0 && pattern[0] == '.')
-                pattern = "^" + currentPattern + pattern;
-
-            if (pattern.Length > 0 && pattern[0] == '+')
+    private bool MatchFromAnyPosition(string inputLine)
+    {
+        for (int startIndex = 0; startIndex < inputLine.Length; startIndex++)
+        {
+            int currentState = startState;
+            for (int index = startIndex; index < inputLine.Length; index++)
             {
-                pattern = pattern.Substring(1);
-                int matchLen = 0;
-                while (true)
+                char ch = inputLine[index];
+                Console.WriteLine($"Processing character '{ch}' at index {index} from state {currentState}");
+
+                if (!transitions[currentState].TryGetValue(ch, out currentState))
                 {
-                    int inputStartPos = FindFirstMatchIndex(inputLine, currentPattern, startFlag, endFlag);
-                    Console.WriteLine(inputStartPos);
-                    if (inputStartPos < 0)
-                    {
-                        if (matchLen > 0)
-                            break;
-                        else
-                            return false;
-                    }
-                    else
-                    {
-                        matchLen++;
-                        inputLine = inputLine.Substring(inputStartPos);
-                    }
+                    break;
                 }
             }
-            else
+            if (acceptStates.Contains(currentState) && (!hasEndAnchor || startIndex + currentState == inputLine.Length))
             {
-                int inputStartPos = FindFirstMatchIndex(inputLine, currentPattern, startFlag, endFlag);
-                if (inputStartPos < 0)
-                    return false;
-                inputLine = inputLine.Substring(inputStartPos);
+                return true;
             }
         }
-        return true;
+        return false;
     }
 
-    public static void Main(string[] args)
+    public void BuildDFA(List<Token> tokens)
     {
-        if (args.Length < 3 || args[0] != "-E")
+        int state = 0;
+
+        transitions.Clear();
+
+        Console.WriteLine("Building DFA from tokens...");
+        for (int i = 0; i < tokens.Count; i++)
         {
-            Console.WriteLine("Expected first argument to be '-E'");
-            Environment.Exit(1);
+            Token token = tokens[i];
+            int nextState = state + 1;
+            Console.WriteLine($"Previous state: {state} Next state: {nextState}");
+
+            if (token.Type == TokenType.DIGIT)
+            {
+                Console.WriteLine("Adding transitions for digits");
+                AddRangeTransition(state, nextState, '0', '9');
+                transitions.Add(new Dictionary<char, int>(transitions[state]));
+            }
+            else if (token.Type == TokenType.ALPHANUM)
+            {
+                Console.WriteLine("Adding transitions for alphanumerics");
+                AddRangeTransition(state, nextState, 'a', 'z');
+                AddRangeTransition(state, nextState, 'A', 'Z');
+                AddRangeTransition(state, nextState, '0', '9');
+                transitions.Add(new Dictionary<char, int>(transitions[state]));
+            }
+            else if (token.Type == TokenType.CHARACTER_GROUP)
+            {
+                Console.WriteLine($"Adding transitions for character group: {token.Value}");
+                foreach (char ch in token.Value)
+                {
+                    transitions[state][ch] = nextState;
+                }
+                transitions.Add(new Dictionary<char, int>(transitions[state]));
+            }
+            else if (token.Type == TokenType.NEGATIVE_CHARACTER_GROUP)
+            {
+                Console.WriteLine($"Adding transitions for negative character group: {token.Value}");
+                for (char ch = (char)0; ch < 128; ch++)
+                {
+                    if (token.Value.IndexOf(ch) == -1)
+                    {
+                        transitions[state][ch] = nextState;
+                    }
+                }
+                transitions.Add(new Dictionary<char, int>(transitions[state]));
+            }
+            else if (token.Type == TokenType.START_ANCHOR)
+            {
+                hasStartAnchor = true;
+                Console.WriteLine("Adding start anchor");
+                continue;
+            }
+            else if (token.Type == TokenType.END_ANCHOR)
+            {
+                hasEndAnchor = true;
+                Console.WriteLine("Adding end anchor");
+                acceptStates.Add(state);
+                Console.WriteLine($"DFA constructed. Accepting state: {state}");
+                return;
+            }
+            else if (token.Type == TokenType.ONE_OR_MORE)
+            {
+                Console.WriteLine("Adding one or more quantifier");
+                foreach (KeyValuePair<char, int> entry in transitions[state - 1])
+                {
+                    Console.WriteLine($"Adding transition for '{entry.Key}'");
+                    transitions[state][entry.Key] = state;
+                }
+                Console.WriteLine($"Adding transition for literal one or more '{tokens[i - 1].Value[0]}'");
+                transitions[state][tokens[i - 1].Value[0]] = nextState;
+                continue;
+            }
+            else
+            {
+                transitions[state][token.Value[0]] = nextState;
+                Console.WriteLine($"Adding transition for literal '{token.Value[0]}'");
+                for (char ch = (char)0; ch < 128; ch++)
+                {
+                    transitions[nextState][ch] = nextState;
+                }
+            }
+            state = nextState;
         }
+        if (!hasEndAnchor)
+        {
+            acceptStates.Add(state);
+        }
+        Console.WriteLine($"DFA constructed. Accepting state: {state}");
+    }
 
-        string pattern = args[2];
-        string inputLine = Console.ReadLine();
-
-        if (MatchPatternSequence(inputLine, pattern))
-            Environment.Exit(0);
-        else
-            Environment.Exit(1);
+    private void AddRangeTransition(int fromState, int toState, char startChar, char endChar)
+    {
+        for (char ch = startChar; ch <= endChar; ch++)
+        {
+            transitions[fromState][ch] = toState;
+        }
     }
 }
