@@ -1,150 +1,142 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Text.RegularExpressions;
 
-class Program
+public class PatternMatcher
 {
-    static List<string> Tokenize(string pattern)
+    public static int FindFirstMatchIndex(string inputLine, string pattern, bool startFlag = false, bool endFlag = false)
     {
-        string specialChars = "\\[";
-        List<string> tokens = new List<string>();
+        if (pattern == "$" && inputLine == "")
+            return 0;
 
-        string token = "";
-        string charNeeded = "";
-        int lenNeeded = -1;
-
-        void Reset()
+        if (pattern == "\\d" || pattern == "\\w")
         {
-            token = "";
-            charNeeded = "";
-            lenNeeded = -1;
-        }
-
-        void Flush(string extra = null)
-        {
-            if (!string.IsNullOrEmpty(token))
-                tokens.Add(token);
-            if (!string.IsNullOrEmpty(extra))
-                tokens.Add(extra);
-            Reset();
-        }
-
-        foreach (char c in pattern)
-        {
-            if (specialChars.Contains(c))
-                Flush();
-            if (c == '\\')
-                lenNeeded = 2;
-            else if (c == '[')
-                charNeeded = "]";
-
-            token += c;
-            if (token.Length == lenNeeded || c == charNeeded.FirstOrDefault())
-                Flush();
-
-            if (new char[] { '+' }.Contains(c))
+            for (int idx = 0; idx < inputLine.Length; idx++)
             {
-                if (token.Length > 2)
+                char c = inputLine[idx];
+                if ((pattern == "\\d" && char.IsDigit(c)) || (pattern == "\\w" && (char.IsLetterOrDigit(c))))
                 {
-                    string extra = token.Substring(token.Length - 2);
-                    token = token.Substring(0, token.Length - 2);
-                    Flush(extra);
-                }
-                else
-                {
-                    Flush();
+                    if (!startFlag || (startFlag && idx == 0))
+                        return idx + 1;
                 }
             }
         }
-
-        Flush();
-        return tokens;
-    }
-
-    static bool MatchPattern(string inputLine, string pattern)
-    {
-        bool matchStart = false;
-        bool matchEnd = false;
-        bool matchFailed = false;
-
-        if (pattern.StartsWith("^"))
+        else if (pattern[0] == '[' && pattern[pattern.Length - 1] == ']')
         {
-            matchStart = true;
-            pattern = pattern.Substring(1);
-        }
-
-        if (pattern.EndsWith("$"))
-        {
-            matchEnd = true;
-            pattern = pattern.Substring(0, pattern.Length - 1);
-        }
-
-        List<string> tokens = Tokenize(pattern);
-        int i = 0, j = 0;
-
-        void ProcessMatch(bool success, int matchLength = 1)
-        {
-            if (success)
-                j++;
-            else
+            if (pattern[1] == '^')
             {
-                j = 0;
-                matchFailed = true;
-            }
-
-            i += matchLength;
-        }
-
-        while (i < inputLine.Length && j < tokens.Count)
-        {
-            string token = tokens[j];
-            bool repeatPlus = false;
-
-            if (token.EndsWith("+"))
-            {
-                repeatPlus = true;
-                token = token.Substring(0, token.Length - 1);
-            }
-
-            if (token == "\\d")
-                ProcessMatch(char.IsDigit(inputLine[i]));
-            else if (token == "\\w")
-                ProcessMatch(char.IsLetterOrDigit(inputLine[i]));
-            else if (token.StartsWith("[") && token.EndsWith("]"))
-            {
-                token = token.Trim('[', ']');
-                if (token.StartsWith("^"))
-                    ProcessMatch(!token.Contains(inputLine[i]));
-                else
-                    ProcessMatch(token.Contains(inputLine[i]));
+                string negativePattern = pattern.Substring(2, pattern.Length - 3);
+                foreach (char c in negativePattern)
+                {
+                    if (inputLine.Contains(c))
+                    {
+                        if (!startFlag || (startFlag && negativePattern.IndexOf(c) == 0))
+                            return -1;
+                    }
+                }
+                return 0;
             }
             else
             {
-                if (repeatPlus)
+                string positivePattern = pattern.Substring(1, pattern.Length - 2);
+                foreach (char c in positivePattern)
                 {
-                    int temp = i;
-                    while (inputLine.Substring(temp).StartsWith(token))
-                        temp += 1;
-                    ProcessMatch(temp > i, (temp - i) != 0 ? (temp - i) : 1);
-                }
-                else
-                {
-                    string text = inputLine.Substring(i, token.Length);
-                    ProcessMatch(text == token, token.Length);
+                    int idx = inputLine.IndexOf(c);
+                    if (idx != -1)
+                    {
+                        if (!startFlag || (startFlag && idx == 0))
+                            return idx + 1;
+                    }
                 }
             }
-
-            if (matchStart && matchFailed)
-                return false;
         }
-
-        if (matchEnd)
-            return i == inputLine.Length;
         else
-            return j == tokens.Count;
+        {
+            int idx = inputLine.IndexOf(pattern);
+            if (idx >= 0)
+            {
+                if (!startFlag || (startFlag && idx == 0))
+                    return idx + 1;
+            }
+        }
+        return -1;
     }
 
-    static void Main(string[] args)
+    public static bool MatchPatternSequence(string inputLine, string pattern)
+    {
+        bool startFlag = false;
+        bool endFlag = false;
+
+        while (pattern.Length > 0)
+        {
+            if (pattern[0] == '^')
+            {
+                startFlag = true;
+                pattern = pattern.Substring(1);
+            }
+
+            if (pattern[pattern.Length - 1] == '$')
+            {
+                endFlag = true;
+                pattern = pattern.Substring(0, pattern.Length - 1);
+            }
+
+            string currentPattern;
+            if (pattern[0] == '\\')
+            {
+                currentPattern = pattern.Substring(0, 2);
+                pattern = pattern.Substring(2);
+            }
+            else if (pattern[0] == '[')
+            {
+                int closingIndex = pattern.IndexOf(']') + 1;
+                if (closingIndex == 0)
+                    throw new ArgumentException("Closing not found");
+                currentPattern = pattern.Substring(0, closingIndex);
+                pattern = pattern.Substring(closingIndex);
+            }
+            else
+            {
+                currentPattern = pattern.Substring(0, 1);
+                pattern = pattern.Substring(1);
+            }
+
+            if (pattern.Length > 0 && pattern[0] == '.')
+                pattern = "^" + currentPattern + pattern;
+
+            if (pattern.Length > 0 && pattern[0] == '+')
+            {
+                pattern = pattern.Substring(1);
+                int matchLen = 0;
+                while (true)
+                {
+                    int inputStartPos = FindFirstMatchIndex(inputLine, currentPattern, startFlag, endFlag);
+                    Console.WriteLine(inputStartPos);
+                    if (inputStartPos < 0)
+                    {
+                        if (matchLen > 0)
+                            break;
+                        else
+                            return false;
+                    }
+                    else
+                    {
+                        matchLen++;
+                        inputLine = inputLine.Substring(inputStartPos);
+                    }
+                }
+            }
+            else
+            {
+                int inputStartPos = FindFirstMatchIndex(inputLine, currentPattern, startFlag, endFlag);
+                if (inputStartPos < 0)
+                    return false;
+                inputLine = inputLine.Substring(inputStartPos);
+            }
+        }
+        return true;
+    }
+
+    public static void Main(string[] args)
     {
         if (args.Length < 3 || args[0] != "-E")
         {
@@ -153,12 +145,11 @@ class Program
         }
 
         string pattern = args[2];
-        string inputLine = Console.In.ReadToEnd().Trim(); // Read input from stdin
+        string inputLine = Console.ReadLine();
 
-        if (MatchPattern(inputLine, pattern))
+        if (MatchPatternSequence(inputLine, pattern))
             Environment.Exit(0);
         else
             Environment.Exit(1);
     }
-
 }
