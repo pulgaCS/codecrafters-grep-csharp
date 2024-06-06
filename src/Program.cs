@@ -2,41 +2,56 @@ using System;
 using System.IO;
 using System.Text;
 
-static bool MatchPattern(string inputLine, string pattern) {
+// This function checks if a given input line matches a given pattern.
+static bool MatchPattern(string inputLine, string pattern)
+{
+    // Get the lengths of the input line and the pattern.
     int inputLength = inputLine.Length;
     int patternLength = pattern.Length;
 
-    for (int i = 0; i <= inputLength - patternLength; i++) {
-        if (MatchFromIndex(inputLine, pattern, i)) {
-            return true;
+    // Loop through the input line to find potential matches with the pattern.
+    for (int i = 0; i <= inputLength - patternLength; i++)
+    {
+        // Check if there is a match starting from the current index i.
+        if (MatchFromIndex(inputLine, pattern, i))
+        {
+            return true; // If there's a match, return true.
         }
     }
 
-    return false;
+    return false; // If no match is found, return false.
 }
 
-static bool MatchFromIndex(string inputLine, string pattern, int index) {
+// This function checks for a pattern match starting from a specific index in the input line.
+static bool MatchFromIndex(string inputLine, string pattern, int index)
+{
     int inputIndex = index;
     int patternIndex = 0;
 
-    while (patternIndex < pattern.Length && inputIndex < inputLine.Length) {
+    while (patternIndex < pattern.Length && inputIndex < inputLine.Length)
+    {
         char patternChar = pattern[patternIndex];
 
-        if (patternChar == '\\') {
+        if (patternChar == '\\')
+        {
             patternIndex++;
-            if (patternIndex >= pattern.Length) {
+            if (patternIndex >= pattern.Length)
+            {
                 return false;
             }
 
             char escChar = pattern[patternIndex];
-            switch (escChar) {
+            switch (escChar)
+            {
                 case 'd':
-                if (!char.IsDigit(inputLine[inputIndex])) {
+                if (!char.IsDigit(inputLine[inputIndex]))
+                {
                     return false;
                 }
                 break;
                 case 'w':
-                if (!char.IsLetterOrDigit(inputLine[inputIndex])) {
+                if (!char.IsLetterOrDigit(inputLine[inputIndex]))
+                {
                     return false;
                 }
                 break;
@@ -44,15 +59,18 @@ static bool MatchFromIndex(string inputLine, string pattern, int index) {
                 return false;
             }
         }
-        else if (patternChar == '[') {
+        else if (patternChar == '[')
+        {
             patternIndex++;
             bool negate = pattern[patternIndex] == '^';
-            if (negate) {
+            if (negate)
+            {
                 patternIndex++;
             }
 
             int closingBracketIndex = pattern.IndexOf(']', patternIndex);
-            if (closingBracketIndex == -1) {
+            if (closingBracketIndex == -1)
+            {
                 return false;
             }
 
@@ -60,17 +78,42 @@ static bool MatchFromIndex(string inputLine, string pattern, int index) {
             patternIndex = closingBracketIndex;
 
             bool matchFound = characterClass.Contains(inputLine[inputIndex]);
-            if (negate) {
+            if (negate)
+            {
                 matchFound = !matchFound;
             }
 
-            if (!matchFound) {
+            if (!matchFound)
+            {
                 return false;
             }
         }
-        else {
-            if (inputLine[inputIndex] != patternChar) {
-                return false;
+        else
+        {
+            if (char.IsDigit(patternChar))
+            {
+                // Check if the pattern specifies a digit count followed by a space.
+                int count = patternChar - '0';
+                string remainingPattern = pattern.Substring(patternIndex + 1);
+                string expectedSubstring = remainingPattern.Substring(0, count);
+                if (inputIndex + count <= inputLine.Length &&
+                    inputLine.Substring(inputIndex, count) == expectedSubstring)
+                {
+                    inputIndex += count;
+                    patternIndex += count;
+                    continue;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (inputLine[inputIndex] != patternChar)
+                {
+                    return false;
+                }
             }
         }
 
@@ -81,19 +124,25 @@ static bool MatchFromIndex(string inputLine, string pattern, int index) {
     return patternIndex == pattern.Length;
 }
 
-if (args.Length < 2 || args[0] != "-E") {
+// Check if the program is invoked with the correct arguments.
+if (args.Length < 2 || args[0] != "-E")
+{
     Console.WriteLine("Expected first argument to be '-E'");
-    Environment.Exit(2);
+    Environment.Exit(2); // Exit with status 2 indicating incorrect usage.
 }
 
+// Extract the pattern and input line from command-line arguments and standard input.
 string pattern = args[1];
 string inputLine = Console.In.ReadToEnd().Trim();
 
 Console.WriteLine("Logs from your program will appear here!");
 
-if (MatchPattern(inputLine, pattern)) {
-    Environment.Exit(0);
+// Check if the input line matches the pattern.
+if (MatchPattern(inputLine, pattern))
+{
+    Environment.Exit(0); // Exit with status 0 indicating successful match.
 }
-else {
-    Environment.Exit(1);
+else
+{
+    Environment.Exit(1); // Exit with status 1 indicating no match.
 }
