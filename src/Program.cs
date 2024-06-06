@@ -2,14 +2,14 @@ using System;
 
 class Program
 {
-    // Helper function to find the index of the first match of the given pattern in the input line
     static int FindFirstMatchIndex(string inputLine, string pattern, bool startFlag = false, bool endFlag = false)
     {
-        // Check for end of line
+        if (string.IsNullOrEmpty(pattern) || string.IsNullOrEmpty(inputLine))
+            return -1;
+
         if (pattern == "$" && inputLine == "")
             return 0;
 
-        // Check for patterns like \d and \w
         if (pattern == "\\d" || pattern == "\\w")
         {
             for (int idx = 0; idx < inputLine.Length; idx++)
@@ -22,7 +22,6 @@ class Program
                 }
             }
         }
-        // Check for patterns like [abc] or [^abc]
         else if (pattern[0] == '[' && pattern[pattern.Length - 1] == ']')
         {
             if (pattern[1] == '^')
@@ -52,7 +51,6 @@ class Program
                 }
             }
         }
-        // Check for regular characters
         else
         {
             int idx = inputLine.IndexOf(pattern);
@@ -66,29 +64,28 @@ class Program
         return -1;
     }
 
-    // Recursive function to check if inputLine matches pattern
     static bool MatchPatternSequence(string inputLine, string pattern)
     {
+        if (string.IsNullOrEmpty(pattern) || string.IsNullOrEmpty(inputLine))
+            return false;
+
         bool startFlag = false;
         bool endFlag = false;
 
         while (!string.IsNullOrEmpty(pattern))
         {
-            // Check for start flag
             if (pattern[0] == '^')
             {
                 startFlag = true;
                 pattern = pattern.Substring(1);
             }
 
-            // Check for end flag
             if (pattern[pattern.Length - 1] == '$')
             {
                 endFlag = true;
                 pattern = pattern.Substring(0, pattern.Length - 1);
             }
 
-            // Get the current pattern to match
             string currentPattern;
             if (pattern.StartsWith("\\"))
             {
@@ -99,7 +96,7 @@ class Program
             {
                 int closingIndex = pattern.IndexOf(']') + 1;
                 if (closingIndex == 0)
-                    throw new ArgumentException("Closing not found");
+                    throw new ArgumentException("Closing bracket not found in pattern");
                 currentPattern = pattern.Substring(0, closingIndex);
                 pattern = pattern.Substring(closingIndex);
             }
@@ -109,13 +106,11 @@ class Program
                 pattern = pattern.Substring(1);
             }
 
-            // Handling special characters like "."
             if (!string.IsNullOrEmpty(pattern) && pattern[0] == '.')
             {
                 pattern = "^" + currentPattern + pattern;
             }
 
-            // Handling repetition with "+"
             if (!string.IsNullOrEmpty(pattern) && pattern[0] == '+')
             {
                 pattern = pattern.Substring(1);
@@ -123,7 +118,6 @@ class Program
                 while (true)
                 {
                     int inputStartPos = FindFirstMatchIndex(inputLine, currentPattern, startFlag, endFlag);
-                    Console.WriteLine(inputStartPos); // For debugging
                     if (inputStartPos < 0)
                     {
                         if (matchLen > 0)
@@ -147,27 +141,24 @@ class Program
             }
         }
 
-        // Return true once the whole pattern is checked without returning false
         return true;
     }
 
     static void Main(string[] args)
     {
-        // Check if the program is invoked with the correct arguments
         if (args.Length < 2 || args[0] != "-E")
         {
-            Console.WriteLine("Expected first argument to be '-E'");
-            Environment.Exit(2); // Exit with status 2 indicating incorrect usage
+            Console.WriteLine("Usage: Program -E <pattern>");
+            Environment.ExitCode = 2; // Incorrect usage exit code
+            return;
         }
 
         string pattern = args[1];
         string inputLine = Console.In.ReadToEnd().Trim();
 
-        Console.WriteLine("Logs from your program will appear here!");
-
         if (MatchPatternSequence(inputLine, pattern))
-            Environment.Exit(0); // Exit with status 0 indicating successful match
+            Environment.ExitCode = 0; // Successful match exit code
         else
-            Environment.Exit(1); // Exit with status 1 indicating no match
+            Environment.ExitCode = 1; // No match exit code
     }
 }
