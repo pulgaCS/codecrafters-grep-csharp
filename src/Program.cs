@@ -1,90 +1,86 @@
 using System;
 using System.IO;
 
-static bool MatchPattern(string inputLine, string pattern) {
-    string placeholder = Guid.NewGuid().ToString(); // Unique placeholder
-    string replacedPattern = pattern.Replace(@"\\", placeholder);
-    string[] patterns = replacedPattern.Split(' ');
+class Program {
+    static bool MatchPattern(string inputLine, string pattern) {
+        string[] patterns = pattern.Split(' ');
 
-    foreach (string p in patterns) {
-        string currentPattern = p.Replace(placeholder, @"\"); // Replace placeholder back with '\\'
-
-        if (currentPattern.Length == 1) {
-            if (!inputLine.Contains(currentPattern)) {
-                return false;
+        foreach (string p in patterns) {
+            if (p.Length == 1) {
+                if (!inputLine.Contains(p)) {
+                    return false;
+                }
             }
-        }
-        else if (currentPattern.StartsWith(@"\d")) {
-            int digitCount = 1;
-            if (currentPattern.Length > 2 && char.IsDigit(currentPattern[2])) {
-                digitCount = int.Parse(currentPattern.Substring(2));
-            }
-
-            int consecutiveDigits = 0;
-            foreach (char c in inputLine) {
-                if (char.IsDigit(c)) {
-                    consecutiveDigits++;
-                    if (consecutiveDigits == digitCount) {
+            else if (p == @"\d") {
+                bool foundDigit = false;
+                foreach (char c in inputLine) {
+                    if (char.IsDigit(c)) {
+                        foundDigit = true;
                         break;
+                    }
+                }
+                if (!foundDigit) {
+                    return false;
+                }
+            }
+            else if (p == @"\w") {
+                bool foundAlphanumeric = false;
+                foreach (char c in inputLine) {
+                    if (char.IsLetterOrDigit(c)) {
+                        foundAlphanumeric = true;
+                        break;
+                    }
+                }
+                if (!foundAlphanumeric) {
+                    return false;
+                }
+            }
+            else if (p.Length > 2 && p[0] == '[' && p[p.Length - 1] == ']') {
+                bool foundChar = false;
+                if (p[1] == '^') {
+                    foreach (char c in inputLine) {
+                        if (!p.Substring(2, p.Length - 3).Contains(c)) {
+                            foundChar = true;
+                            break;
+                        }
                     }
                 }
                 else {
-                    consecutiveDigits = 0;
-                }
-            }
-
-            if (consecutiveDigits != digitCount) {
-                return false;
-            }
-        }
-        else if (currentPattern.Length > 2 && currentPattern[0] == '[' && currentPattern[currentPattern.Length - 1] == ']') {
-            bool foundChar = false;
-            if (currentPattern[1] == '^') {
-                foreach (char c in inputLine) {
-                    if (!currentPattern.Substring(2, currentPattern.Length - 3).Contains(c)) {
-                        foundChar = true;
-                        break;
+                    foreach (char c in inputLine) {
+                        if (p.Substring(1, p.Length - 2).Contains(c)) {
+                            foundChar = true;
+                            break;
+                        }
                     }
+                }
+                if (!foundChar) {
+                    return false;
                 }
             }
             else {
-                foreach (char c in inputLine) {
-                    if (currentPattern.Substring(1, currentPattern.Length - 2).Contains(c)) {
-                        foundChar = true;
-                        break;
-                    }
+                if (!inputLine.Contains(p)) {
+                    return false;
                 }
             }
-            if (!foundChar) {
-                return false;
-            }
         }
-        else {
-            if (!inputLine.Contains(currentPattern)) {
-                return false;
-            }
-        }
+
+        return true;
     }
 
-    return true;
-}
+    static void Main(string[] args) {
+        if (args.Length < 2 || args[0] != "-E") {
+            Console.WriteLine("Expected first argument to be '-E'");
+            Environment.Exit(2);
+        }
 
+        string pattern = args[1];
+        string inputLine = Console.In.ReadToEnd();
 
-
-if (args.Length < 2 || args[0] != "-E") {
-    Console.WriteLine("Expected first argument to be '-E'");
-    Environment.Exit(2);
-}
-
-string pattern = args[1];
-string inputLine = Console.In.ReadToEnd();
-
-// You can use print statements as follows for debugging, they'll be visible when running tests.
-Console.WriteLine("Logs from your program will appear here!");
-
-if (MatchPattern(inputLine, pattern)) {
-    Environment.Exit(0);
-}
-else {
-    Environment.Exit(1);
+        if (MatchPattern(inputLine, pattern)) {
+            Environment.Exit(0);
+        }
+        else {
+            Environment.Exit(1);
+        }
+    }
 }
