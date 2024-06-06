@@ -2,51 +2,70 @@ using System;
 using System.IO;
 
 static bool MatchPattern(string inputLine, string pattern) {
-    int inputPos = 0;
-    int patternPos = 0;
+    int patternIndex = 0;
+    int inputIndex = 0;
 
-    while (patternPos < pattern.Length && inputPos < inputLine.Length) {
-        char patternChar = pattern[patternPos];
+    while (patternIndex < pattern.Length && inputIndex < inputLine.Length) {
+        char currentPatternChar = pattern[patternIndex];
 
-        if (patternChar == '\\') {
-            patternPos++;
-            if (patternPos >= pattern.Length) throw new ArgumentException($"Unhandled pattern: {pattern}");
-            patternChar = pattern[patternPos];
+        if (currentPatternChar == '\\') {
+            patternIndex++;
+            if (patternIndex >= pattern.Length) {
+                throw new ArgumentException($"Invalid escape sequence in pattern: {pattern}");
+            }
+            currentPatternChar = pattern[patternIndex];
 
-            switch (patternChar) {
+            switch (currentPatternChar) {
                 case 'd':
-                if (!char.IsDigit(inputLine[inputPos])) return false;
+                if (!char.IsDigit(inputLine[inputIndex])) {
+                    return false;
+                }
                 break;
                 case 'w':
-                if (!char.IsLetterOrDigit(inputLine[inputPos])) return false;
+                if (!char.IsLetterOrDigit(inputLine[inputIndex])) {
+                    return false;
+                }
                 break;
                 default:
-                throw new ArgumentException($"Unhandled pattern: \\{patternChar}");
+                throw new ArgumentException($"Unhandled escape sequence: \\{currentPatternChar}");
             }
         }
-        else if (patternChar == '[') {
-            int closingBracket = pattern.IndexOf(']', patternPos);
-            if (closingBracket == -1) throw new ArgumentException($"Unhandled pattern: {pattern}");
+        else if (currentPatternChar == '[') {
+            patternIndex++;
+            bool negate = pattern[patternIndex] == '^';
+            if (negate) {
+                patternIndex++;
+            }
 
-            string charClass = pattern.Substring(patternPos + 1, closingBracket - patternPos - 1);
-            bool negate = charClass.StartsWith("^");
-            if (negate) charClass = charClass.Substring(1);
+            int closingBracketIndex = pattern.IndexOf(']', patternIndex);
+            if (closingBracketIndex == -1) {
+                throw new ArgumentException($"Unmatched '[' in pattern: {pattern}");
+            }
 
-            bool match = charClass.Contains(inputLine[inputPos]);
-            if (negate) match = !match;
-            if (!match) return false;
+            string characterClass = pattern.Substring(patternIndex, closingBracketIndex - patternIndex);
+            patternIndex = closingBracketIndex;
 
-            patternPos = closingBracket;
+            bool matchFound = characterClass.Contains(inputLine[inputIndex]);
+            if (negate) {
+                matchFound = !matchFound;
+            }
+
+            if (!matchFound) {
+                return false;
+            }
         }
         else {
-            if (patternChar != inputLine[inputPos]) return false;
+            if (inputLine[inputIndex] != currentPatternChar) {
+                return false;
+            }
         }
 
-        patternPos++;
-        inputPos++;
+        patternIndex++;
+        inputIndex++;
     }
 
-    return patternPos == pattern.Length && inputPos <= inputLine.Length;
+    // Ensure the whole pattern was matched
+    return patternIndex == pattern.Length;
 }
 
 if (args.Length < 2 || args[0] != "-E") {
@@ -55,7 +74,7 @@ if (args.Length < 2 || args[0] != "-E") {
 }
 
 string pattern = args[1];
-string inputLine = Console.In.ReadToEnd().Trim(); // Trim to remove any extra newlines
+string inputLine = Console.In.ReadToEnd();
 
 // You can use print statements as follows for debugging, they'll be visible when running tests.
 Console.WriteLine("Logs from your program will appear here!");
