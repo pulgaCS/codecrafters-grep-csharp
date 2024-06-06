@@ -88,27 +88,28 @@ static bool MatchFromIndex(string inputLine, string pattern, int index)
                 return false;
             }
         }
-        else if (char.IsDigit(patternChar))
+        else
         {
-            // Check if the pattern specifies a digit count followed by a space.
-            int count = patternChar - '0'; // Convert the character representing the digit count to an integer.
-                                           // Check if there are enough characters in the input line to match the specified count.
-            if (inputIndex + count <= inputLine.Length)
+            if (char.IsDigit(patternChar))
             {
-                // Get the substring of the input line corresponding to the digit count.
-                string digitsSubstring = inputLine.Substring(inputIndex, count);
-                // Check if the substring consists of only digits.
-                if (digitsSubstring.All(char.IsDigit))
+                // Check if the pattern specifies a digit count followed by characters.
+                int count = patternChar - '0';
+                string remainingPattern = pattern.Substring(patternIndex + 1);
+                string expectedSubstring = remainingPattern.Substring(0, count);
+                if (inputIndex + count <= inputLine.Length &&
+                    inputLine.Substring(inputIndex, count) == expectedSubstring)
                 {
-                    inputIndex += count; // Move the input index forward by the digit count.
-                    patternIndex++; // Move the pattern index forward.
-                    continue; // Continue to the next iteration of the loop.
+                    inputIndex += count;
+                    patternIndex += count;
+                    continue;
+                }
+                else
+                {
+                    return false;
                 }
             }
-            // If the specified digit count does not match, return false.
-            return false;
-        }
 
+        }
 
         patternIndex++;
         inputIndex++;
