@@ -2,10 +2,12 @@ using System;
 using System.IO;
 
 static bool MatchPattern(string inputLine, string pattern) {
-    string[] patterns = pattern.Split(' ');
+    string placeholder = Guid.NewGuid().ToString(); // Unique placeholder
+    string replacedPattern = pattern.Replace(@"\\", placeholder);
+    string[] patterns = replacedPattern.Split(' ');
 
     foreach (string p in patterns) {
-        string currentPattern = p.Replace(@"\\", @"\"); // Replace double backslashes with single backslash
+        string currentPattern = p.Replace(placeholder, @"\"); // Replace placeholder back with '\\'
 
         if (currentPattern.Length == 1) {
             if (!inputLine.Contains(currentPattern)) {
