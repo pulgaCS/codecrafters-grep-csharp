@@ -33,6 +33,15 @@ static bool MatchPattern(string inputLine, string pattern) {
                 throw new ArgumentException($"Unhandled special character: {specialChar}");
         }
     }
+    else if (pattern.Contains(" ")) {
+        string[] parts = pattern.Split(' ');
+        foreach (string part in parts) {
+            if (!inputLine.Contains(part)) {
+                return false;
+            }
+        }
+        return true;
+    }
     else if (pattern.Length > 2 && pattern[0] == '[' && pattern[pattern.Length - 1] == ']') {
         if (pattern[1] == '^') {
             foreach (char c in inputLine) {
