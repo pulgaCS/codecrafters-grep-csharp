@@ -1,75 +1,65 @@
 using System;
-using System.IO;
 
 static bool MatchPattern(string inputLine, string pattern) {
-    if (pattern.Length == 1) {
-        return inputLine.Contains(pattern);
-    }
-    else if (pattern.StartsWith("\\") && pattern.Length > 1) {
-        char specialChar = pattern[1];
-        switch (specialChar) {
-            case 'd':
-                foreach (char c in inputLine) {
-                    if (char.IsDigit(c)) {
-                        return true;
-                    }
-                }
-                return false;
-            case 'w':
-                foreach (char c in inputLine) {
-                    if (char.IsLetterOrDigit(c)) {
-                        return true;
-                    }
-                }
-                return false;
-            case 's':
-                foreach (char c in inputLine) {
-                    if (char.IsWhiteSpace(c)) {
-                        return true;
-                    }
-                }
-                return false;
-            default:
-                throw new ArgumentException($"Unhandled special character: {specialChar}");
-        }
-    }
-    else if (pattern.StartsWith("\\d ") && pattern.Length > 2) {
-        string[] tokens = pattern.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (tokens.Length == 2 && tokens[0] == @"\d") {
-            foreach (char c in inputLine) {
-                if (char.IsDigit(c) && inputLine.Contains(tokens[1])) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        else {
-            throw new ArgumentException($"Unhandled pattern: {pattern}");
-        }
-    }
-    else if (pattern.Length > 2 && pattern[0] == '[' && pattern[pattern.Length - 1] == ']') {
-        if (pattern[1] == '^') {
-            foreach (char c in inputLine) {
-                if (!pattern.Substring(2, pattern.Length - 3).Contains(c)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        else {
-            foreach (char c in inputLine) {
-                if (pattern.Substring(1, pattern.Length - 2).Contains(c)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-    else {
-        throw new ArgumentException($"Unhandled pattern: {pattern}");
-    }
-}
+    int inputIndex = 0;
+    int patternIndex = 0;
 
+    while (inputIndex < inputLine.Length && patternIndex < pattern.Length) {
+        char pChar = pattern[patternIndex];
+
+        if (pChar == '\\') {
+            if (patternIndex + 1 >= pattern.Length) {
+                throw new ArgumentException($"Invalid escape sequence at end of pattern: {pattern}");
+            }
+
+            char nextPatternChar = pattern[patternIndex + 1];
+
+            if (nextPatternChar == 'd') {
+                if (inputIndex >= inputLine.Length || !char.IsDigit(inputLine[inputIndex])) {
+                    return false;
+                }
+                inputIndex++;
+                patternIndex += 2;
+            }
+            else if (nextPatternChar == 'w') {
+                if (inputIndex >= inputLine.Length || !char.IsLetterOrDigit(inputLine[inputIndex])) {
+                    return false;
+                }
+                inputIndex++;
+                patternIndex += 2;
+            }
+            else {
+                throw new ArgumentException($"Unhandled escape sequence: \\{nextPatternChar}");
+            }
+        }
+        else if (pChar == '[') {
+            int closingBracket = pattern.IndexOf(']', patternIndex);
+            if (closingBracket == -1) {
+                throw new ArgumentException($"Unclosed character class in pattern: {pattern}");
+            }
+
+            string charClass = pattern.Substring(patternIndex + 1, closingBracket - patternIndex - 1);
+            bool isNegated = charClass.StartsWith("^");
+            string charSet = isNegated ? charClass.Substring(1) : charClass;
+
+            if (inputIndex >= inputLine.Length ||
+                isNegated == charSet.Contains(inputLine[inputIndex])) {
+                return false;
+            }
+            inputIndex++;
+            patternIndex = closingBracket + 1;
+        }
+        else {
+            if (inputIndex >= inputLine.Length || inputLine[inputIndex] != pChar) {
+                return false;
+            }
+            inputIndex++;
+            patternIndex++;
+        }
+    }
+
+    return inputIndex == inputLine.Length && patternIndex == pattern.Length;
+}
 
 if (args.Length < 2 || args[0] != "-E") {
     Console.WriteLine("Expected first argument to be '-E'");
@@ -77,7 +67,7 @@ if (args.Length < 2 || args[0] != "-E") {
 }
 
 string pattern = args[1];
-string inputLine = Console.In.ReadToEnd();
+string inputLine = Console.In.ReadToEnd().Trim();
 
 // You can use print statements as follows for debugging, they'll be visible when running tests.
 Console.WriteLine("Logs from your program will appear here!");
@@ -88,6 +78,3 @@ if (MatchPattern(inputLine, pattern)) {
 else {
     Environment.Exit(1);
 }
-
-
-
