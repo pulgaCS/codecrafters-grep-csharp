@@ -4,10 +4,8 @@ static bool MatchPattern(string inputLine, string pattern) {
     int inputIndex = 0;
     int patternIndex = 0;
 
-    while (inputIndex < inputLine.Length && patternIndex < pattern.Length) {
-        char pChar = pattern[patternIndex];
-
-        if (pChar == '\\') {
+    while (patternIndex < pattern.Length) {
+        if (pattern[patternIndex] == '\\') {
             if (patternIndex + 1 >= pattern.Length) {
                 throw new ArgumentException($"Invalid escape sequence at end of pattern: {pattern}");
             }
@@ -32,7 +30,7 @@ static bool MatchPattern(string inputLine, string pattern) {
                 throw new ArgumentException($"Unhandled escape sequence: \\{nextPatternChar}");
             }
         }
-        else if (pChar == '[') {
+        else if (pattern[patternIndex] == '[') {
             int closingBracket = pattern.IndexOf(']', patternIndex);
             if (closingBracket == -1) {
                 throw new ArgumentException($"Unclosed character class in pattern: {pattern}");
@@ -50,7 +48,7 @@ static bool MatchPattern(string inputLine, string pattern) {
             patternIndex = closingBracket + 1;
         }
         else {
-            if (inputIndex >= inputLine.Length || inputLine[inputIndex] != pChar) {
+            if (inputIndex >= inputLine.Length || inputLine[inputIndex] != pattern[patternIndex]) {
                 return false;
             }
             inputIndex++;
@@ -58,7 +56,8 @@ static bool MatchPattern(string inputLine, string pattern) {
         }
     }
 
-    return inputIndex == inputLine.Length && patternIndex == pattern.Length;
+    // Ensure all characters in the pattern and input line are consumed
+    return patternIndex == pattern.Length && (inputIndex == inputLine.Length || char.IsWhiteSpace(inputLine[inputIndex]));
 }
 
 if (args.Length < 2 || args[0] != "-E") {
@@ -69,7 +68,7 @@ if (args.Length < 2 || args[0] != "-E") {
 string pattern = args[1];
 string inputLine = Console.In.ReadToEnd().Trim();
 
-// You can use print statements as follows for debugging, they'll be visible when running tests.
+// Debug log
 Console.WriteLine("Logs from your program will appear here!");
 
 if (MatchPattern(inputLine, pattern)) {
