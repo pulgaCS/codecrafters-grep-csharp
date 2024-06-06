@@ -2,103 +2,76 @@ using System;
 
 class Program
 {
-    // Function to check if the input line matches the pattern
-    static bool MatchPattern(string inputLine, string pattern)
-    {
-        // Call the helper function MatchHere to perform the matching
-        return MatchHere(inputLine, pattern, inputLine);
-    }
-
-    // Recursive helper function to perform pattern matching
+    // Helper function to recursively match the pattern
     static bool MatchHere(string remainingInput, string pattern, string inputLine)
     {
         // Base case: empty pattern matches any input
         if (pattern == "")
             return true;
 
+        // Special case: pattern is "$", meaning it should match the end of input
+        if (pattern == "$")
+            return remainingInput == "";
+
         // Base case: if there's no input remaining, the match failed
         if (remainingInput == "")
             return false;
 
-        // Handling one or more quantifier (+)
-        if (pattern.StartsWith("+"))
-        {
-            // Extracting the character preceding the plus sign
-            char precedingChar = pattern[1];
-            // If the next character in the input matches the preceding character
-            if (remainingInput[0] == precedingChar)
-            {
-                // Keep matching the same character as long as it occurs consecutively
-                while (remainingInput.Length > 0 && remainingInput[0] == precedingChar)
-                {
-                    remainingInput = remainingInput.Substring(1);
-                }
-                // Continue matching with the rest of the pattern and input
-                return MatchHere(remainingInput, pattern.Substring(2), inputLine);
-            }
-            else
-                // If the character does not match, the pattern fails
-                return false;
-        }
-
         // Handling escape sequences like \d and \w
         if (pattern.StartsWith("\\d"))
         {
-            // If the next character in the input is a digit
             if (Char.IsDigit(remainingInput[0]))
-                // Continue matching with the rest of the pattern and input
                 return MatchHere(remainingInput.Substring(1), pattern.Substring(2), inputLine);
             else
-                // Otherwise, continue matching with the same input and pattern
                 return MatchHere(remainingInput.Substring(1), pattern, inputLine);
         }
         else if (pattern.StartsWith("\\w"))
         {
-            // If the next character in the input is a letter or digit
             if (Char.IsLetterOrDigit(remainingInput[0]))
-                // Continue matching with the rest of the pattern and input
                 return MatchHere(remainingInput.Substring(1), pattern.Substring(2), inputLine);
             else
-                // Otherwise, continue matching with the same input and pattern
                 return MatchHere(remainingInput.Substring(1), pattern, inputLine);
         }
         // Handling negative character groups like [^...]
         else if (pattern.StartsWith("[^"))
         {
-            // Extracting characters inside the negative character group
-            string charactersInNegativeCharacterGroup = pattern.Substring(2, pattern.IndexOf(']') - 2);
-            // If the next character in the input is not in the negative character group
-            if (!charactersInNegativeCharacterGroup.Contains(remainingInput[0]))
-                // Continue matching with the rest of the pattern and input
-                return MatchHere(remainingInput.Substring(1), pattern.Substring(pattern.IndexOf(']') + 1), inputLine);
-            else
-                // Otherwise, the match fails
-                return false;
+            string charactersInNegativeCharacterGroup = pattern.Split(']')[0].Substring(2);
+            return !charactersInNegativeCharacterGroup.Contains(remainingInput[0]) && MatchHere(remainingInput.Substring(1), pattern.Substring(pattern.IndexOf(']') + 1), inputLine);
         }
         // Handling positive character groups like [...]
         else if (pattern.StartsWith("["))
         {
-            // Extracting characters inside the positive character group
-            string charactersInPositiveCharacterGroup = pattern.Substring(1, pattern.IndexOf(']') - 1);
-            // If the next character in the input is in the positive character group
-            if (charactersInPositiveCharacterGroup.Contains(remainingInput[0]))
-                // Continue matching with the rest of the pattern and input
-                return MatchHere(remainingInput.Substring(1), pattern.Substring(pattern.IndexOf(']') + 1), inputLine);
-            else
-                // Otherwise, the match fails
-                return false;
+            string charactersInPositiveCharacterGroup = pattern.Split(']')[0].Substring(1);
+            return charactersInPositiveCharacterGroup.Contains(remainingInput[0]) && MatchHere(remainingInput.Substring(1), pattern.Substring(pattern.IndexOf(']') + 1), inputLine);
         }
         // Handling single characters and characters not requiring special handling
+        else if (pattern.Length == 1)
+        {
+            return pattern[0] == remainingInput[0] && MatchHere(remainingInput.Substring(1), pattern.Substring(1), inputLine);
+        }
+        // Handling any other case
         else
         {
-            // If the next character in the input matches the pattern character
-            if (remainingInput[0] == pattern[0])
-                // Continue matching with the rest of the pattern and input
-                return MatchHere(remainingInput.Substring(1), pattern.Substring(1), inputLine);
-            else
-                // Otherwise, the match fails
-                return false;
+            return pattern[0] == remainingInput[0] && MatchHere(remainingInput.Substring(1), pattern.Substring(1), inputLine);
         }
+    }
+
+    // Main function to check if the pattern matches the input line
+    static bool MatchPattern(string inputLine, string pattern)
+    {
+        // If the pattern starts with "^", it must match from the beginning of the input
+        if (pattern[0] == '^')
+        {
+            return MatchHere(inputLine, pattern.Substring(1), inputLine);
+        }
+
+        // If the pattern doesn't start with "^", it can match anywhere in the input
+        // Base case: if there's no input, the match fails
+        if (inputLine == "")
+            return false;
+
+        // Otherwise, try to match the pattern
+        return MatchHere(inputLine, pattern, inputLine);
     }
 
     static void Main(string[] args)
@@ -114,6 +87,7 @@ class Program
         string pattern = args[1];
         string inputLine = Console.In.ReadToEnd().Trim();
 
+        // Output log message
         Console.WriteLine("Logs from your program will appear here!");
 
         // Check if the input line matches the pattern
