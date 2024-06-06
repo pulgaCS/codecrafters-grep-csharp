@@ -111,10 +111,10 @@ static bool MatchFromIndex(string inputLine, string pattern, int index)
             {
                 return false;
             }
+            inputIndex++; // Move to the next character in the input line
         }
 
         patternIndex++;
-        inputIndex++;
     }
 
     return patternIndex == pattern.Length;
