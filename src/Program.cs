@@ -159,7 +159,8 @@ class MyGrep
 
     static bool MatchCharacterClass(byte[] line, string pattern)
     {
-        string allChars = pattern.Substring(1, pattern.IndexOf(']') - 1);
+        int classEndIndx = pattern.IndexOf(']');
+        string allChars = pattern.Substring(1, classEndIndx - 1);
         bool notCheck = allChars[0] == '^';
         if (notCheck)
         {
@@ -168,14 +169,16 @@ class MyGrep
         while (true)
         {
             int indx = IndexOfAny(line, allChars.ToCharArray());
-            bool result = notCheck ? indx == -1 : indx >= 0;
-            if (!result)
+            if ((indx == -1) == notCheck)
+            {
+                if (MatchUtil(SubArray(line, indx + 1), pattern.Substring(classEndIndx + 1)))
+                {
+                    return true;
+                }
+            }
+            else if (!notCheck)
             {
                 return false;
-            }
-            if (MatchUtil(SubArray(line, indx + 1), pattern.Substring(allChars.Length + 2)))
-            {
-                return true;
             }
             line = SubArray(line, indx + 1);
         }
