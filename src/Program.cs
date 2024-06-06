@@ -153,11 +153,12 @@ class Program
         }
 
         string pattern = args[2];
-        string inputLine = Console.ReadLine();
+        string inputLine = Console.In.ReadToEnd().Trim(); // Read input from stdin
 
         if (MatchPattern(inputLine, pattern))
             Environment.Exit(0);
         else
             Environment.Exit(1);
     }
+
 }
