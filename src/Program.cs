@@ -5,29 +5,33 @@ static bool MatchPattern(string inputLine, string pattern) {
     if (pattern.Length == 1) {
         return inputLine.Contains(pattern);
     }
-    else if (pattern == @"\d") {
-        foreach (char c in inputLine) {
-            if (char.IsDigit(c)) {
-                return true;
-            }
+    else if (pattern.StartsWith("\\") && pattern.Length > 1) {
+        char specialChar = pattern[1];
+        switch (specialChar) {
+            case 'd':
+                foreach (char c in inputLine) {
+                    if (char.IsDigit(c)) {
+                        return true;
+                    }
+                }
+                return false;
+            case 'w':
+                foreach (char c in inputLine) {
+                    if (char.IsLetterOrDigit(c)) {
+                        return true;
+                    }
+                }
+                return false;
+            case 's':
+                foreach (char c in inputLine) {
+                    if (char.IsWhiteSpace(c)) {
+                        return true;
+                    }
+                }
+                return false;
+            default:
+                throw new ArgumentException($"Unhandled special character: {specialChar}");
         }
-        return false;
-    }
-    else if (pattern == @"\w") {
-        foreach (char c in inputLine) {
-            if (char.IsLetterOrDigit(c)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    else if (pattern == @"\s") {
-        foreach (char c in inputLine) {
-            if (char.IsWhiteSpace(c)) {
-                return true;
-            }
-        }
-        return false;
     }
     else if (pattern.Length > 2 && pattern[0] == '[' && pattern[pattern.Length - 1] == ']') {
         if (pattern[1] == '^') {
